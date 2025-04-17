@@ -1,0 +1,402 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+// Model yang diperlukan untuk NextAuth
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(STUDENT)
+  
+  // Relasi untuk Kelas
+  ownedClasses  Class[]            // Kelas yang dibuat/dimiliki oleh guru
+  enrollments   ClassEnrollment[]  // Kelas yang diikuti oleh siswa
+  
+  // Relasi untuk QuizSubmission
+  submissions   QuizSubmission[]   // Submisi kuis yang dikirimkan siswa
+  
+  // Relasi untuk StudentQuizProgress
+  quizProgress  StudentQuizProgress[]
+  
+  // Relasi untuk Assistance Submissions
+  level1Submissions AssistanceLevel1Submission[]
+  level2Submissions AssistanceLevel2Submission[]
+  level3Completions AssistanceLevel3Completion[]
+  
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Model untuk Kelas
+model Class {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relasi ke Guru (pembuat kelas)
+  teacherId   String
+  teacher     User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Siswa (melalui ClassEnrollment)
+  enrollments ClassEnrollment[]
+  
+  // Relasi ke Quiz
+  quizzes     Quiz[]
+}
+
+// Model untuk Pendaftaran Siswa ke Kelas
+model ClassEnrollment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relasi ke Kelas
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Siswa
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Memastikan siswa tidak bisa terdaftar pada kelas yang sama lebih dari sekali
+  @@unique([classId, studentId])
+}
+
+// Model untuk Kuis
+model Quiz {
+  id                String    @id @default(cuid())
+  title             String
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relasi ke Kelas (opsional, quiz bisa untuk kelas tertentu)
+  classId           String?
+  class             Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+  
+  // Relasi ke Pertanyaan
+  questions         Question[]
+  
+  // Relasi ke Quiz Assistance
+  assistanceLevel1  QuizAssistanceLevel1?
+  assistanceLevel2  QuizAssistanceLevel2?
+  assistanceLevel3  QuizAssistanceLevel3?
+  
+  // Relasi ke Quiz Submission
+  submissions       QuizSubmission[]
+  
+  // Relasi ke StudentQuizProgress
+  studentProgress   StudentQuizProgress[]
+}
+
+// Model untuk Pertanyaan Quiz
+model Question {
+  id             String   @id @default(cuid())
+  text           String   // Teks pertanyaan
+  imageUrl       String?  // URL gambar (opsional)
+  expectedAnswer String?  // Jawaban yang diharapkan (opsional)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relasi ke Quiz
+  quizId         String
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke SubmissionAnswer
+  answers        SubmissionAnswer[]
+}
+
+// Quiz Assistance Models - Level 1 (Yes/No Questions)
+model QuizAssistanceLevel1 {
+  id                   String                          @id @default(cuid())
+  title                String
+  description          String?                         @db.Text
+  quizId               String                          @unique
+  quiz                 Quiz                            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questions            AssistanceQuestionYesNo[]
+  submissions          AssistanceLevel1Submission[]
+  createdAt            DateTime                        @default(now())
+  updatedAt            DateTime                        @updatedAt
+}
+
+model AssistanceQuestionYesNo {
+  id               String                 @id @default(cuid())
+  question         String                 @db.Text
+  correctAnswer    Boolean
+  explanation      String?                @db.Text
+  assistanceQuizId String
+  assistanceQuiz   QuizAssistanceLevel1   @relation(fields: [assistanceQuizId], references: [id], onDelete: Cascade)
+  answers          AssistanceAnswerYesNo[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+}
+
+// Quiz Assistance Models - Level 2 (Essay Questions)
+model QuizAssistanceLevel2 {
+  id                   String                          @id @default(cuid())
+  title                String
+  description          String?                         @db.Text
+  quizId               String                          @unique
+  quiz                 Quiz                            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questions            AssistanceQuestionEssay[]
+  submissions          AssistanceLevel2Submission[]
+  createdAt            DateTime                        @default(now())
+  updatedAt            DateTime                        @updatedAt
+}
+
+model AssistanceQuestionEssay {
+  id               String                   @id @default(cuid())
+  question         String                   @db.Text
+  hint             String?                  @db.Text
+  correctAnswer    String                   @db.Text
+  assistanceQuizId String
+  assistanceQuiz   QuizAssistanceLevel2     @relation(fields: [assistanceQuizId], references: [id], onDelete: Cascade)
+  answers          AssistanceAnswerEssay[]
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+}
+
+// Quiz Assistance Models - Level 3 (PDF Reference)
+model QuizAssistanceLevel3 {
+  id                   String                          @id @default(cuid())
+  title                String
+  description          String?                         @db.Text
+  pdfUrl               String
+  quizId               String                          @unique
+  quiz                 Quiz                            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  completions          AssistanceLevel3Completion[]
+  createdAt            DateTime                        @default(now())
+  updatedAt            DateTime                        @updatedAt
+}
+
+// Enum untuk status submisi kuis
+enum SubmissionStatus {
+  PENDING   // Menunggu penilaian guru
+  PASSED    // Lulus
+  FAILED    // Gagal
+}
+
+// Model untuk Submisi Kuis
+model QuizSubmission {
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  attemptNumber Int
+  status       SubmissionStatus @default(PENDING)
+  feedback     String?
+  score        Int?      // Skor persentase (0-100)
+  correctAnswers Int?    // Jumlah jawaban yang benar
+  totalQuestions Int?    // Total pertanyaan
+  
+  // Relasi
+  quizId       String
+  quiz         Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Answer
+  answers      SubmissionAnswer[]
+
+  @@index([quizId, studentId])
+}
+
+// Model untuk Jawaban Submisi
+model SubmissionAnswer {
+  id            String         @id @default(cuid())
+  answerText    String         @db.Text  // Teks jawaban siswa
+  isCorrect     Boolean?       // Null jika belum dinilai, true/false setelah dinilai
+  feedback      String?        @db.Text  // Umpan balik khusus untuk jawaban ini
+  
+  // Relasi ke QuizSubmission
+  submissionId  String
+  submission    QuizSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Question
+  questionId    String
+  question      Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  // Indeks untuk mendapatkan jawaban berdasarkan submisi
+  @@index([submissionId])
+  
+  // Memastikan hanya ada satu jawaban per pertanyaan dalam satu submisi
+  @@unique([submissionId, questionId])
+}
+
+// Model untuk submisi bantuan level 1 (Ya/Tidak)
+model AssistanceLevel1Submission {
+  id            String                 @id @default(cuid())
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  status        SubmissionStatus       @default(PENDING)
+  
+  // Relasi ke Assistance Quiz Level 1
+  assistanceId  String
+  assistance    QuizAssistanceLevel1   @relation(fields: [assistanceId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Siswa
+  studentId     String
+  student       User                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Jawaban
+  answers       AssistanceAnswerYesNo[]
+  
+  @@index([assistanceId, studentId])
+}
+
+// Model untuk jawaban bantuan level 1
+model AssistanceAnswerYesNo {
+  id                String                     @id @default(cuid())
+  answer            Boolean                    // Jawaban siswa
+  isCorrect         Boolean                    // Auto-graded
+  
+  // Relasi ke Submission
+  submissionId      String
+  submission        AssistanceLevel1Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Question
+  questionId        String
+  question          AssistanceQuestionYesNo    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([submissionId, questionId])
+}
+
+// Model untuk submisi bantuan level 2 (Essay)
+model AssistanceLevel2Submission {
+  id            String                @id @default(cuid())
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  status        SubmissionStatus      @default(PENDING)
+  feedback      String?               @db.Text
+  
+  // Relasi ke Assistance Quiz Level 2
+  assistanceId  String
+  assistance    QuizAssistanceLevel2  @relation(fields: [assistanceId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Siswa
+  studentId     String
+  student       User                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Jawaban
+  answers       AssistanceAnswerEssay[]
+  
+  @@index([assistanceId, studentId])
+}
+
+// Model untuk jawaban bantuan level 2
+model AssistanceAnswerEssay {
+  id                String                     @id @default(cuid())
+  answerText        String                     @db.Text
+  isCorrect         Boolean?                   // Null jika belum dinilai
+  feedback          String?                    @db.Text
+  
+  // Relasi ke Submission
+  submissionId      String
+  submission        AssistanceLevel2Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Question
+  questionId        String
+  question          AssistanceQuestionEssay    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([submissionId, questionId])
+}
+
+// Model untuk pelacakan bantuan level 3 (PDF dibaca)
+model AssistanceLevel3Completion {
+  id            String              @id @default(cuid())
+  createdAt     DateTime            @default(now())
+  
+  // Relasi ke Assistance Level 3
+  assistanceId  String
+  assistance    QuizAssistanceLevel3 @relation(fields: [assistanceId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Siswa
+  studentId     String
+  student       User                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([assistanceId, studentId])
+}
+
+// Enum untuk status kemajuan siswa dalam kuis
+enum AssistanceRequirement {
+  NONE                    // Tidak ada bantuan yang diperlukan
+  ASSISTANCE_LEVEL1       // Bantuan Level 1 diperlukan
+  ASSISTANCE_LEVEL2       // Bantuan Level 2 diperlukan  
+  ASSISTANCE_LEVEL3       // Bantuan Level 3 diperlukan
+}
+
+// Model untuk melacak kemajuan siswa dalam kuis
+model StudentQuizProgress {
+  id                String    @id @default(cuid())
+  studentId         String
+  quizId           String
+  currentAttempt    Int       @default(0)
+  lastAttemptPassed Boolean?
+  failedAttempts    Int       @default(0)
+  level1Completed   Boolean   @default(false)
+  level2Completed   Boolean   @default(false)
+  level3Completed   Boolean   @default(false)
+  level3AccessGranted Boolean @default(false)
+  overrideSystemFlow Boolean  @default(false)
+  manuallyAssignedLevel String?
+  
+  student           User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz              Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([studentId, quizId])
+}
