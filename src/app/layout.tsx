@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import { SessionProvider } from "@/components/session-provider";
 import { Toaster } from "@/components/ui/sonner"
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+
 
 export const metadata: Metadata = {
   title: "PsycaNow",
@@ -22,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={geistSans.className}>
+    <html lang="en">
       <body 
         className="bg-gray-50 text-gray-800 flex flex-col min-h-screen"
         suppressHydrationWarning
