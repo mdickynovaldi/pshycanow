@@ -13,10 +13,10 @@ import {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { level: string } }
+  { params }: { params: Promise<{ level: string }> }
 ) {
   try {
-    const { level } = params;
+    const { level } = await params;
     
     if (!level) {
       return NextResponse.json(
