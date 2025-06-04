@@ -18,7 +18,7 @@ Halaman student quiz telah diperbaiki dan dipercantik dengan konsistensi sistem 
 
 #### 🎉 **Status LULUS (PASSED):**
 ```jsx
-<Alert className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-md">
+<Alert className="mb-6 bg-linear-to-r from-green-50 to-emerald-50 border-green-300 shadow-md">
   <div className="flex items-start">
     <div className="bg-green-500 rounded-full p-2 mr-4">
       <CheckCircle className="h-6 w-6 text-white" />
@@ -40,7 +40,7 @@ Halaman student quiz telah diperbaiki dan dipercantik dengan konsistensi sistem 
 
 #### ❌ **Status GAGAL (FAILED):**
 ```jsx
-<Alert className="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-red-300 shadow-md">
+<Alert className="mb-6 bg-linear-to-r from-red-50 to-rose-50 border-red-300 shadow-md">
   <div className="bg-red-500 rounded-full p-2 mr-4">
     <XCircle className="h-6 w-6 text-white" />
   </div>
@@ -61,8 +61,8 @@ const actuallyPassed = scorePercent >= 70 || allCorrect;
 return (
   <Alert className={`mb-6 shadow-md ${
     actuallyPassed 
-      ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300" 
-      : "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300"
+      ? "bg-linear-to-r from-green-50 to-emerald-50 border-green-300" 
+      : "bg-linear-to-r from-orange-50 to-amber-50 border-orange-300"
   }`}>
     <h3 className="text-lg font-bold">
       {actuallyPassed ? "🎉 Anda Lulus!" : "📝 Hasil Penilaian Otomatis"}
@@ -77,8 +77,8 @@ return (
 
 #### 🏆 **Card LULUS:**
 ```jsx
-<Card className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-lg">
-  <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-t-lg">
+<Card className="mb-6 bg-linear-to-r from-green-50 to-emerald-50 border-green-300 shadow-lg">
+  <CardHeader className="bg-linear-to-r from-green-100 to-emerald-100 rounded-t-lg">
     <CardTitle className="text-green-800 flex items-center text-xl">
       <div className="bg-green-500 rounded-full p-2 mr-3">
         <CheckCircle className="h-6 w-6 text-white" />
@@ -100,8 +100,8 @@ return (
 
 #### ❌ **Card GAGAL:**
 ```jsx
-<Card className="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-red-300 shadow-lg">
-  <CardHeader className="bg-gradient-to-r from-red-100 to-rose-100 rounded-t-lg">
+<Card className="mb-6 bg-linear-to-r from-red-50 to-rose-50 border-red-300 shadow-lg">
+  <CardHeader className="bg-linear-to-r from-red-100 to-rose-100 rounded-t-lg">
     <CardTitle className="text-red-800 flex items-center text-xl">
       <div className="bg-red-500 rounded-full p-2 mr-3">
         <X className="h-6 w-6 text-white" />
@@ -116,8 +116,8 @@ return (
 **Perbaikan pada Card Informasi Kuis:**
 
 ```jsx
-<Card className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
-  <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 rounded-t-lg">
+<Card className="mb-6 bg-linear-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
+  <CardHeader className="bg-linear-to-r from-blue-100 to-indigo-100 rounded-t-lg">
     <CardTitle className="flex items-center text-xl text-blue-900">
       <BookOpen className="h-6 w-6 mr-3 text-blue-600" />
       Informasi Kuis
@@ -155,7 +155,7 @@ return (
     </div>
     
     {/* Sistem Penilaian */}
-    <div className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg border border-cyan-200">
+    <div className="p-4 bg-linear-to-r from-cyan-50 to-blue-50 rounded-lg border border-cyan-200">
       <h3 className="font-semibold text-cyan-800 mb-3 flex items-center">
         <CheckCircle className="h-5 w-5 mr-2" />
         Sistem Penilaian & Kriteria Lulus

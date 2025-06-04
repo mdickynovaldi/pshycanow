@@ -154,7 +154,7 @@ export default function StudentQuizzesPage() {
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="flex-grow">
+              <CardContent className="grow">
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Status:</span>

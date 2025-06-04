@@ -232,7 +232,7 @@ export default function QuizSubmissionPage() {
   });
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div className="space-y-6 p-6 bg-linear-to-br from-blue-50 to-indigo-100 min-h-screen">
       {/* Header Section */}
       <div className="bg-white rounded-xl shadow-lg p-6 border border-blue-200">
         <div className="flex justify-between items-start">
@@ -260,8 +260,8 @@ export default function QuizSubmissionPage() {
       </div>
 
       {/* Informasi Koreksi Otomatis */}
-      <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-md">
-        <CardHeader className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-t-lg">
+      <Card className="bg-linear-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-md">
+        <CardHeader className="bg-linear-to-r from-blue-100 to-cyan-100 rounded-t-lg">
           <CardTitle className="text-lg flex items-center gap-3 text-blue-900">
             <Star className="h-5 w-5 text-blue-600" />
             Sistem Penilaian Otomatis & Manual
@@ -309,7 +309,7 @@ export default function QuizSubmissionPage() {
         <div className="space-y-6">
           {/* Summary Card */}
           <Card className="bg-white shadow-lg border-0">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
+            <CardHeader className="bg-linear-to-r from-gray-50 to-gray-100 rounded-t-lg">
               <CardTitle className="text-xl flex items-center gap-2 text-gray-800">
                 <Trophy className="h-6 w-6 text-yellow-500" />
                 Ringkasan Penilaian
@@ -317,23 +317,23 @@ export default function QuizSubmissionPage() {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                <div className="text-center p-6 bg-linear-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
                   <div className="text-3xl font-bold text-blue-600">{submissions.length}</div>
                   <div className="text-sm font-medium text-blue-700 mt-1">Total Percobaan</div>
                 </div>
-                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                <div className="text-center p-6 bg-linear-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
                   <div className="text-3xl font-bold text-green-600">
                     {submissions.filter(s => s.status === "PASSED").length}
                   </div>
                   <div className="text-sm font-medium text-green-700 mt-1">Lulus</div>
                 </div>
-                <div className="text-center p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
+                <div className="text-center p-6 bg-linear-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
                   <div className="text-3xl font-bold text-red-600">
                     {submissions.filter(s => s.status === "FAILED").length}
                   </div>
                   <div className="text-sm font-medium text-red-700 mt-1">Tidak Lulus</div>
                 </div>
-                <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                <div className="text-center p-6 bg-linear-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
                   <div className="text-3xl font-bold text-orange-600">
                     {submissions.filter(s => s.status === "PENDING").length}
                   </div>
@@ -352,9 +352,9 @@ export default function QuizSubmissionPage() {
                 <Card key={submission.id} className="bg-white shadow-xl border-0 overflow-hidden">
                   {/* Header dengan Status */}
                   <div className={`p-4 ${
-                    submission.status === "PASSED" ? "bg-gradient-to-r from-green-100 to-green-200" :
-                    submission.status === "FAILED" ? "bg-gradient-to-r from-red-100 to-red-200" :
-                    "bg-gradient-to-r from-orange-100 to-orange-200"
+                    submission.status === "PASSED" ? "bg-linear-to-r from-green-100 to-green-200" :
+                    submission.status === "FAILED" ? "bg-linear-to-r from-red-100 to-red-200" :
+                    "bg-linear-to-r from-orange-100 to-orange-200"
                   }`}>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
@@ -529,7 +529,7 @@ export default function QuizSubmissionPage() {
                       <Button 
                         onClick={() => handleSaveScores(submission.id)}
                         disabled={saving}
-                        className="px-8 py-3 text-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                        className="px-8 py-3 text-lg font-medium bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         size="lg"
                       >
                         {saving ? (

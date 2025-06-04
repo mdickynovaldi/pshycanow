@@ -406,7 +406,7 @@ export default function StudentQuizPage() {
     
     // if (quizStatus.finalStatus === SubmissionStatus.PASSED) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-md max-w-4xl">
+    //     <Alert className="mb-8 bg-linear-to-r from-green-50 to-emerald-50 border-green-300 shadow-md max-w-4xl">
     //       <div className="flex items-start gap-4">
     //         <div className="bg-green-500 rounded-full p-2 shrink-0">
     //           <CheckCircle className="h-5 w-5 text-white" />
@@ -457,7 +457,7 @@ export default function StudentQuizPage() {
     
     // if (currentAssistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL1) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-md">
+    //     <Alert className="mb-8 bg-linear-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-md">
     //       <div className="flex items-start w-full">
     //         <div className="bg-blue-500 rounded-full p-2 mr-4">
     //           <BookOpen className="h-6 w-6 text-white" />
@@ -492,7 +492,7 @@ export default function StudentQuizPage() {
     // // Status setelah menyelesaikan level 1 - WAJIB mengerjakan kuis utama
     // if (quizStatus.level1Completed && (quizStatus.assistanceRequired === AssistanceRequirement.NONE || quizStatus.nextStep === "TRY_MAIN_QUIZ_AGAIN")) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-md">
+    //     <Alert className="mb-8 bg-linear-to-r from-green-50 to-emerald-50 border-green-300 shadow-md">
     //       <div className="flex items-start w-full">
     //         <div className="bg-green-500 rounded-full p-2 mr-4">
     //           <CheckCircle className="h-6 w-6 text-white" />
@@ -532,7 +532,7 @@ export default function StudentQuizPage() {
     
     // if (quizStatus.currentAttempt >= 2 && !quizStatus.level1Completed && quizStatus.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL2) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-md">
+    //     <Alert className="mb-8 bg-linear-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-md">
     //       <div className="flex items-start w-full">
     //         <div className="bg-amber-500 rounded-full p-2 mr-4">
     //           <HelpCircle className="h-6 w-6 text-white" />
@@ -566,8 +566,8 @@ export default function StudentQuizPage() {
     //   return (
     //     <Alert className={`mb-8 shadow-md ${
     //       isLevel2Completed 
-    //         ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300" 
-    //         : "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300"
+    //         ? "bg-linear-to-r from-green-50 to-emerald-50 border-green-300" 
+    //         : "bg-linear-to-r from-amber-50 to-yellow-50 border-amber-300"
     //     }`}>
     //       <div className="flex items-start">
     //         <div className={`rounded-full p-2 mr-4 ${
@@ -629,7 +629,7 @@ export default function StudentQuizPage() {
     // // Status setelah menyelesaikan level 2 - WAJIB mengerjakan kuis utama
     // if (quizStatus.level2Completed && (quizStatus.nextStep === "TRY_MAIN_QUIZ_AGAIN" || quizStatus.assistanceRequired === AssistanceRequirement.NONE)) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-md">
+    //     <Alert className="mb-8 bg-linear-to-r from-green-50 to-emerald-50 border-green-300 shadow-md">
     //       <div className="flex items-start">
     //         <div className="bg-green-500 rounded-full p-2 mr-4">
     //           <CheckCircle className="h-6 w-6 text-white" />
@@ -670,7 +670,7 @@ export default function StudentQuizPage() {
     // // Status setelah menyelesaikan level 3 - percobaan terakhir
     // if (quizStatus.level3Completed && (quizStatus.nextStep === "TRY_MAIN_QUIZ_AGAIN" || quizStatus.assistanceRequired === AssistanceRequirement.NONE)) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-300 shadow-md">
+    //     <Alert className="mb-8 bg-linear-to-r from-purple-50 to-indigo-50 border-purple-300 shadow-md">
     //       <div className="flex items-start">
     //         <div className="bg-purple-500 rounded-full p-2 mr-4">
     //           <CheckCircle className="h-6 w-6 text-white" />
@@ -710,7 +710,7 @@ export default function StudentQuizPage() {
     
     // if (currentAssistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL3) {
     //   return (
-    //     <Alert className="mb-8 bg-gradient-to-r from-red-50 to-rose-50 border-red-300 shadow-md">
+    //     <Alert className="mb-8 bg-linear-to-r from-red-50 to-rose-50 border-red-300 shadow-md">
     //       <div className="flex items-start">
     //         <div className="bg-red-500 rounded-full p-2 mr-4">
     //           <FileText className="h-6 w-6 text-white" />
@@ -740,7 +740,7 @@ export default function StudentQuizPage() {
     // }
     
     return (
-      <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-200 shadow-sm mb-8 max-w-4xl">
+      <div className="bg-linear-to-r from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-200 shadow-sm mb-8 max-w-4xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-2">
             <h3 className="font-semibold text-lg text-gray-800 flex items-center">
@@ -795,8 +795,8 @@ export default function StudentQuizPage() {
   const renderFailedQuiz = () => {
     if (!quizStatus || !quizData) return null;
     return (
-      <Card className="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-red-300 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-red-100 to-rose-100 rounded-t-lg">
+      <Card className="mb-6 bg-linear-to-r from-red-50 to-rose-50 border-red-300 shadow-lg">
+        <CardHeader className="bg-linear-to-r from-red-100 to-rose-100 rounded-t-lg">
           <div className="flex items-center justify-between">
             <CardTitle className="text-red-800 flex items-center text-xl">
               <div className="bg-red-500 rounded-full p-2 mr-3">
@@ -854,8 +854,8 @@ export default function StudentQuizPage() {
   const renderPassedQuiz = () => {
     if (!quizStatus || !quizData) return null;
     return (
-      <Card className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-t-lg">
+      <Card className="mb-6 bg-linear-to-r from-green-50 to-emerald-50 border-green-300 shadow-lg">
+        <CardHeader className="bg-linear-to-r from-green-100 to-emerald-100 rounded-t-lg">
           <div className="flex items-center justify-between">
             <CardTitle className="text-green-800 flex items-center text-xl">
               <div className="bg-green-500 rounded-full p-2 mr-3">
@@ -930,7 +930,7 @@ export default function StudentQuizPage() {
                               quizStatus.finalStatus !== SubmissionStatus.FAILED;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50">
       <div className="container max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Button variant="ghost" size="sm" className="mb-8" onClick={() => router.push('/student/quizzes')}>
           <ChevronLeft className="h-4 w-4 mr-2" />
@@ -950,7 +950,7 @@ export default function StudentQuizPage() {
         </div>
         
         {showEmergencyStartButton && (
-          <Alert className="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200 shadow-sm">
+          <Alert className="mb-8 bg-linear-to-r from-blue-50 to-cyan-50 border-blue-200 shadow-sm">
             <div className="flex items-start p-2">
               <BookOpen className="h-5 w-5 text-blue-500 mt-0.5" />
               <div className="ml-4 flex-1">
@@ -976,8 +976,8 @@ export default function StudentQuizPage() {
         {/* Jika belum lulus dan belum gagal, tampilkan informasi kuis normal */}
         {(quizStatus?.finalStatus as SubmissionStatus) !== SubmissionStatus.PASSED && 
          (quizStatus?.finalStatus as SubmissionStatus) !== SubmissionStatus.FAILED && (
-          <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 rounded-t-lg p-6">
+          <Card className="mb-8 bg-linear-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
+            <CardHeader className="bg-linear-to-r from-blue-100 to-indigo-100 rounded-t-lg p-6">
               <CardTitle className="flex items-center text-xl sm:text-2xl text-blue-900">
                 <BookOpen className="h-6 w-6 mr-3 text-blue-600" />
                 Informasi Kuis
@@ -1019,7 +1019,7 @@ export default function StudentQuizPage() {
                 </div>
                 
                 {/* Sistem Penilaian */}
-                <div className="p-6 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
+                <div className="p-6 bg-linear-to-r from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
                   <h3 className="font-semibold text-cyan-800 mb-4 flex items-center text-lg">
                     <CheckCircle className="h-5 w-5 mr-2" />
                     Sistem Penilaian & Kriteria Lulus
@@ -1142,9 +1142,9 @@ export default function StudentQuizPage() {
               }`}>
                 <CardHeader className={`p-6 ${
                   quizStatus.failedAttempts === 1 && !quizStatus.level1Completed
-                    ? "bg-gradient-to-r from-blue-50 to-blue-100"
+                    ? "bg-linear-to-r from-blue-50 to-blue-100"
                     : quizStatus.level1Completed
-                    ? "bg-gradient-to-r from-green-50 to-green-100"
+                    ? "bg-linear-to-r from-green-50 to-green-100"
                     : "bg-gray-50"
                 }`}>
                   <CardTitle className={`text-lg ${
@@ -1218,9 +1218,9 @@ export default function StudentQuizPage() {
               }`}>
                 <CardHeader className={`p-6 ${
                   quizStatus.failedAttempts === 2 && !quizStatus.level2Completed
-                    ? "bg-gradient-to-r from-amber-50 to-amber-100"
+                    ? "bg-linear-to-r from-amber-50 to-amber-100"
                     : quizStatus.level2Completed
-                    ? "bg-gradient-to-r from-green-50 to-green-100"
+                    ? "bg-linear-to-r from-green-50 to-green-100"
                     : "bg-gray-50"
                 }`}>
                   <CardTitle className={`text-lg ${
@@ -1294,9 +1294,9 @@ export default function StudentQuizPage() {
               }`}>
                 <CardHeader className={`p-6 ${
                   quizStatus.failedAttempts === 3 && !quizStatus.level3Completed
-                    ? "bg-gradient-to-r from-red-50 to-red-100"
+                    ? "bg-linear-to-r from-red-50 to-red-100"
                     : quizStatus.level3Completed
-                    ? "bg-gradient-to-r from-green-50 to-green-100"
+                    ? "bg-linear-to-r from-green-50 to-green-100"
                     : "bg-gray-50"
                 }`}>
                   <CardTitle className={`text-lg ${
@@ -1366,7 +1366,7 @@ export default function StudentQuizPage() {
             {quizStatus && (quizStatus.level1Completed || quizStatus.level2Completed || quizStatus.level3Completed) && 
              (quizStatus.finalStatus as SubmissionStatus) !== SubmissionStatus.PASSED && 
              (quizStatus.finalStatus as SubmissionStatus) !== SubmissionStatus.FAILED && (
-              <div className="mt-8 p-6 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl shadow-sm">
+              <div className="mt-8 p-6 bg-linear-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl shadow-sm">
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-4" />
                   <div>
@@ -1410,7 +1410,7 @@ export default function StudentQuizPage() {
           (quizStatus.failedAttempts === 2 && quizStatus.level2Completed && quizStatus.assistanceRequired === AssistanceRequirement.NONE) ||
           (quizStatus.failedAttempts === 3 && quizStatus.level3Completed && quizStatus.assistanceRequired === AssistanceRequirement.NONE)
         ) && (
-          <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl shadow-sm">
+          <div className="mt-8 p-6 bg-linear-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h3 className="font-medium text-blue-800 text-lg">Siap untuk Kuis Utama</h3>
@@ -1448,7 +1448,7 @@ export default function StudentQuizPage() {
           (quizStatus.finalStatus as SubmissionStatus) !== SubmissionStatus.FAILED &&
           (!quizStatus.lastSubmission || quizStatus.lastSubmission.status !== SubmissionStatus.PENDING)
         ) && (
-          <div className="mt-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl shadow-sm">
+          <div className="mt-8 p-6 bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h3 className="font-medium text-amber-800 text-lg">Bantuan Diselesaikan</h3>

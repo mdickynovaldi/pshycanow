@@ -64,7 +64,7 @@ export default function StudentList({ students }: StudentListProps) {
           <li key={student.id}>
             <div className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center">
-                <div className="flex-shrink-0 h-10 w-10">
+                <div className="shrink-0 h-10 w-10">
                   {student.image ? (
                     <Image
                       className="h-10 w-10 rounded-full"

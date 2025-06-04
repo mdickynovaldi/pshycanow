@@ -56,7 +56,7 @@ export default async function StudentCoursesPage() {
                 <CardTitle>{course.title}</CardTitle>
                 <CardDescription>{course.description}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent className="grow">
                 <p className="text-sm mb-2"><strong>Guru:</strong> {course.teacher}</p>
                 <p className="text-sm mb-2"><strong>Durasi:</strong> {course.duration}</p>
                 <p className="text-sm"><strong>Level:</strong> {course.level}</p>

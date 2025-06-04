@@ -37,7 +37,7 @@ const status = finalPassed ? "PASSED" : "FAILED";
 **Perbaikan UI:**
 
 #### 🎨 **Modern Design Elements:**
-- ✅ Gradient background (`bg-gradient-to-br from-blue-50 to-indigo-100`)
+- ✅ Gradient background (`bg-linear-to-br from-blue-50 to-indigo-100`)
 - ✅ Card shadows dan rounded corners
 - ✅ Color-coded status headers
 - ✅ Modern typography dengan proper spacing
@@ -114,9 +114,9 @@ const getSubmissionStatus = (submission) => {
 ## 🎨 **UI Design Features**
 
 ### 1. **Color Scheme:**
-- 🟢 **PASSED:** Green gradient (`bg-gradient-to-r from-green-100 to-green-200`)
-- 🔴 **FAILED:** Red gradient (`bg-gradient-to-r from-red-100 to-red-200`)
-- 🟡 **PENDING:** Orange gradient (`bg-gradient-to-r from-orange-100 to-orange-200`)
+- 🟢 **PASSED:** Green gradient (`bg-linear-to-r from-green-100 to-green-200`)
+- 🔴 **FAILED:** Red gradient (`bg-linear-to-r from-red-100 to-red-200`)
+- 🟡 **PENDING:** Orange gradient (`bg-linear-to-r from-orange-100 to-orange-200`)
 
 ### 2. **Icons & Visual Elements:**
 - 🏆 **Trophy** untuk PASSED

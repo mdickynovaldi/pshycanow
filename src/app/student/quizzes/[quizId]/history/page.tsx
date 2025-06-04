@@ -218,7 +218,7 @@ export default function SubmissionHistoryPage() {
               {/* Summary Section */}
               <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mx-6 mt-6 rounded-r-lg">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <History className="h-5 w-5 text-blue-400" />
                   </div>
                   <div className="ml-3">
