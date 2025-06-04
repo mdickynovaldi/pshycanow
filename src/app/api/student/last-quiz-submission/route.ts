@@ -2,49 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { AssistanceRequirement } from "@prisma/client";
+// import { AssistanceRequirement } from "@prisma/client"; // Tidak digunakan secara langsung di sini
 
-// Interface untuk tipe data
-interface StudentQuizProgress {
-  id: string;
-  studentId: string;
-  quizId: string;
-  currentAttempt: number;
-  lastAttemptPassed: boolean | null;
-  maxAttempts: number;
-  assistanceRequired: AssistanceRequirement;
-  completedLevel1: boolean;
-  completedLevel2: boolean;
-  completedLevel3: boolean;
-  lastSubmissionId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface QuizSubmission {
-  id: string;
-  quizId: string;
-  studentId: string;
-  score: number;
-  passed: boolean;
-  feedback: string | null;
-  answers: any; // Tipe data bisa bervariasi (JSON, string, object)
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Interface untuk tipe data (dihapus karena tidak digunakan)
+// interface StudentQuizProgress { ... }
+// interface QuizSubmission { ... }
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || (session.user as any).role !== UserRole.STUDENT) {
+    // Menggunakan type assertion yang lebih aman
+    const userRole = (session?.user as { role?: UserRole })?.role;
+    const userId = (session?.user as { id?: string })?.id;
+
+    if (!session?.user || userRole !== UserRole.STUDENT || !userId) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
     
-    const userId = (session.user as any).id;
     const quizId = request.nextUrl.searchParams.get("quizId");
     
     if (!quizId) {

@@ -1,5 +1,4 @@
 import * as z from 'zod';
-import { SubmissionStatus } from '../../types';
 
 // Level 1 - Yes/No Questions
 const questionYesNoSchema = z.object({
@@ -100,7 +99,7 @@ export const assistanceAnswerYesNoSchema = z.object({
 
 // Skema untuk submisi bantuan level 1
 export const assistanceLevel1SubmissionSchema = z.object({
-  assistanceId: z.string(),
+  quizId: z.string(),
   answers: z.array(assistanceAnswerYesNoSchema)
     .min(1, "Minimal harus ada 1 jawaban")
 });
@@ -113,7 +112,7 @@ export const assistanceAnswerEssaySchema = z.object({
 
 // Skema untuk submisi bantuan level 2
 export const assistanceLevel2SubmissionSchema = z.object({
-  assistanceId: z.string(),
+  quizId: z.string(),
   answers: z.array(assistanceAnswerEssaySchema)
     .min(1, "Minimal harus ada 1 jawaban")
 });

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardDocumentCheckIcon, DocumentTextIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import { ClipboardDocumentCheckIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,9 +65,9 @@ export default function TeacherSubmissionsPage() {
       <div className="flex items-center mb-6">
         <ClipboardDocumentCheckIcon className="h-8 w-8 mr-2 text-blue-500" />
         <div>
-          <h1 className="text-2xl font-bold">Submisi untuk Dinilai</h1>
+          <h1 className="text-2xl font-bold">Submisi Kuis (Telah Dinilai Otomatis)</h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Daftar pengerjaan kuis siswa yang menunggu penilaian
+            Daftar pengerjaan kuis siswa yang telah dinilai secara otomatis oleh sistem
           </p>
         </div>
       </div>
@@ -90,10 +90,10 @@ export default function TeacherSubmissionsPage() {
         <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-lg text-center">
           <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
-            Belum ada submisi yang menunggu penilaian
+            Belum ada submisi kuis
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
-            Semua submisi kuis siswa sudah dinilai. Periksa kembali nanti jika ada submisi baru.
+            Siswa belum mengerjakan kuis. Semua kuis dinilai otomatis oleh sistem.
           </p>
           <Button 
             onClick={loadSubmissions}
@@ -136,6 +136,28 @@ export default function TeacherSubmissionsPage() {
                   </div>
                   
                   <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      submission.status === 'PASSED' 
+                        ? 'bg-green-100 text-green-800' 
+                        : submission.status === 'FAILED' 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {submission.status === 'PASSED' 
+                        ? 'Lulus' 
+                        : submission.status === 'FAILED' 
+                          ? 'Gagal' 
+                          : 'Dinilai Otomatis'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Skor:</span>
+                    <span className="font-medium">{submission.score || '0'}%</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Dikirim:</span>
                     <span>
                       {formatDistanceToNow(new Date(submission.createdAt), {
@@ -147,7 +169,7 @@ export default function TeacherSubmissionsPage() {
                 </div>
                 
                 <Button className="w-full mt-4" size="sm">
-                  Nilai Submisi
+                  Lihat Detail Submisi
                 </Button>
               </CardContent>
             </Card>

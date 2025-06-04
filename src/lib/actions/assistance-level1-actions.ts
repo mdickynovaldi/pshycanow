@@ -5,16 +5,15 @@ import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { 
-  AssistanceRequirement, 
   SubmissionStatus 
 } from "@/types";
 import { 
   assistanceLevel1Schema, 
   assistanceLevel1SubmissionSchema,
-  assistanceLevel1QuestionSchema
+    
 } from "@/lib/validations/quiz-assistance";
 import * as z from "zod";
-import { markLevel1Completed } from "./quiz-progress-actions";
+
 
 // Helper untuk memeriksa akses
 async function checkAccess() {
@@ -66,13 +65,12 @@ export async function createAssistanceLevel1(
         data: {
           title: validatedData.title,
           description: validatedData.description,
-          passingScore: validatedData.passingScore,
           questions: {
             deleteMany: {},
-            create: validatedData.questions.map((question) => ({
-              text: question.text,
-              correctAnswer: question.correctAnswer,
-              explanation: question.explanation || ""
+            create: validatedData.questions.map((q) => ({
+              question: q.question,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation || undefined
             }))
           }
         },
@@ -87,12 +85,11 @@ export async function createAssistanceLevel1(
           quizId,
           title: validatedData.title,
           description: validatedData.description,
-          passingScore: validatedData.passingScore,
           questions: {
-            create: validatedData.questions.map((question) => ({
-              text: question.text,
-              correctAnswer: question.correctAnswer,
-              explanation: question.explanation || ""
+            create: validatedData.questions.map((q) => ({
+              question: q.question,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation || undefined
             }))
           }
         },
@@ -191,10 +188,10 @@ export async function submitAssistanceLevel1(
     const explanations: Record<string, string> = {};
     
     // Menyimpan jawaban benar dan penjelasan untuk frontend
-    assistance.questions.forEach(question => {
-      correctAnswers[question.id] = question.correctAnswer;
-      if (question.explanation) {
-        explanations[question.id] = question.explanation;
+    assistance.questions.forEach(questionItem => {
+      correctAnswers[questionItem.id] = questionItem.correctAnswer;
+      if (questionItem.explanation) {
+        explanations[questionItem.id] = questionItem.explanation;
       }
     });
     
@@ -241,9 +238,9 @@ export async function submitAssistanceLevel1(
     // Update progress pembelajaran siswa
     const progress = await prisma.studentQuizProgress.findUnique({
       where: {
-        quizId_studentId: {
-          quizId: assistance.quizId,
-          studentId: access.userId
+        studentId_quizId: {
+          studentId: access.userId,
+          quizId: assistance.quizId
         }
       }
     });
@@ -318,54 +315,40 @@ export async function getLatestLevel1Submission(
   }
   
   try {
-    const submissions = await prisma.assistanceLevel1Submission.findMany({
+    const submission = await prisma.assistanceLevel1Submission.findFirst({
       where: {
         assistanceId,
-        studentId
+        studentId,
       },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 1
-    });
-    
-    if (submissions.length === 0) {
-      return { success: true, data: null };
-    }
-    
-    // Dapatkan bantuan level 1 untuk mendapatkan jawaban yang benar
-    const assistance = await prisma.quizAssistanceLevel1.findUnique({
-      where: { id: assistanceId },
+      orderBy: { createdAt: 'desc' },
       include: {
-        questions: true
+        answers: true,
+        assistance: {
+          include: {
+            questions: true
+          }
+        }
       }
     });
-    
-    if (!assistance) {
-      return { success: false, message: "Bantuan level 1 tidak ditemukan" };
+
+    if (!submission) {
+      return { success: false, message: "Submisi tidak ditemukan" };
     }
-    
-    const submission = submissions[0];
-    const scorePercentage = (submission.score / submission.totalQuestions) * 100;
-    
-    return { 
-      success: true, 
+
+    // Hitung skor dari jawaban yang benar jika submission.score null
+    const calculatedScore = submission.score ?? submission.answers.filter(a => a.isCorrect).length;
+    const calculatedTotalQuestions = submission.assistance.questions.length;
+
+    return {
+      success: true,
       data: {
         ...submission,
-        scorePercentage,
-        passingScore: assistance.passingScore,
-        correctAnswers: assistance.questions.reduce((acc, question) => {
-          acc[question.id] = question.correctAnswer;
-          return acc;
-        }, {} as Record<string, boolean>),
-        explanations: assistance.questions.reduce((acc, question) => {
-          acc[question.id] = question.explanation;
-          return acc;
-        }, {} as Record<string, string>)
-      }
+        score: calculatedScore,
+        totalQuestions: calculatedTotalQuestions,
+      },
     };
   } catch (error) {
     console.error("Error getting latest level 1 submission:", error);
-    return { success: false, message: "Terjadi kesalahan saat mengambil submisi bantuan level 1 terbaru" };
+    return { success: false, message: "Gagal mengambil submisi terakhir" };
   }
 } 

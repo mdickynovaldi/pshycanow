@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Button } from "../../../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+
 import { UserRole } from "../../../lib/auth";
 import { getStudentCourses } from "../../../lib/actions/student-actions";
 import { AlertCircle } from "lucide-react";
@@ -61,11 +61,7 @@ export default async function StudentCoursesPage() {
                 <p className="text-sm mb-2"><strong>Durasi:</strong> {course.duration}</p>
                 <p className="text-sm"><strong>Level:</strong> {course.level}</p>
               </CardContent>
-              <CardFooter>
-                <Button className="w-full" asChild>
-                  <a href={`/student/courses/${course.id}`}>Lihat Kursus</a>
-                </Button>
-              </CardFooter>
+              
             </Card>
           ))}
         </div>
@@ -74,54 +70,5 @@ export default async function StudentCoursesPage() {
   );
 }
 
-// Contoh data kursus
-const dummyCourses = [
-  { 
-    id: "1", 
-    title: "Psikologi Dasar", 
-    description: "Pengenalan dasar-dasar ilmu psikologi",
-    teacher: "Dr. Budi Santoso",
-    duration: "8 minggu",
-    level: "Pemula"
-  },
-  { 
-    id: "2", 
-    title: "Psikologi Perkembangan", 
-    description: "Mempelajari perkembangan psikologis manusia",
-    teacher: "Dr. Ani Wijaya",
-    duration: "10 minggu",
-    level: "Menengah"
-  },
-  { 
-    id: "3", 
-    title: "Psikologi Sosial", 
-    description: "Hubungan antara individu dan kelompok sosial",
-    teacher: "Dr. Rudi Hartono",
-    duration: "12 minggu",
-    level: "Menengah"
-  },
-  { 
-    id: "4", 
-    title: "Psikologi Klinis", 
-    description: "Dasar-dasar psikologi klinis dan terapeutik",
-    teacher: "Dr. Dewi Susanti",
-    duration: "14 minggu",
-    level: "Lanjutan"
-  },
-  { 
-    id: "5", 
-    title: "Psikologi Kognitif", 
-    description: "Proses berpikir, persepsi, dan memori",
-    teacher: "Dr. Joko Widodo",
-    duration: "10 minggu",
-    level: "Menengah"
-  },
-  { 
-    id: "6", 
-    title: "Psikologi Abnormal", 
-    description: "Studi tentang perilaku abnormal dan gangguan mental",
-    teacher: "Dr. Siti Nurhaliza",
-    duration: "12 minggu",
-    level: "Lanjutan"
-  },
-]; 
+// Contoh data kursus (dihapus karena tidak digunakan)
+// const dummyCourses = [ ... ]; 

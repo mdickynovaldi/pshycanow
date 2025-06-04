@@ -7,11 +7,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default async function StudentControlPage({
-  params,
-}: {
-  params: { quizId: string };
-}) {
+export default async function StudentControlPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   

@@ -2,12 +2,11 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getQuizById } from "@/lib/actions/quiz-actions";
-import { submitQuizAnswers } from "@/lib/actions/quiz-submission-actions";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -70,7 +69,7 @@ export default function TakeQuizPage() {
       setSubmitting(true);
       
       // Validate that all questions have answers
-      const unansweredQuestions = Object.entries(answers).filter(([_, value]) => !value.trim());
+      const unansweredQuestions = Object.entries(answers).filter(([ value]) => !value.trim());
       if (unansweredQuestions.length > 0) {
         toast.error("Harap jawab semua pertanyaan sebelum mengirim");
         setSubmitting(false);
@@ -90,8 +89,8 @@ export default function TakeQuizPage() {
       
       console.log("Data request:", JSON.stringify(formDataToSend));
       
-      // Gunakan endpoint API baru yang dioptimalkan
-      const response = await fetch('/api/quiz/direct-submit', {
+      // Gunakan endpoint API yang telah dimodifikasi
+      const response = await fetch('/api/student/submit-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,8 +109,25 @@ export default function TakeQuizPage() {
         
         // Tunggu sebentar untuk memberi waktu pada database diupdate
         setTimeout(() => {
-          // Redirect to quiz detail page with refresh flag
-          router.push(`/student/quizzes/${quizId}?refreshStatus=true`);
+          // Cek arah navigasi selanjutnya berdasarkan respons API
+          if (result.data?.nextAction) {
+            const nextAction = result.data.nextAction;
+            
+            // Berdasarkan nextAction dari API, arahkan siswa ke halaman yang sesuai
+            if (nextAction === "assistance_level_1") {
+              router.push(`/student/quizzes/${quizId}/assistance/level1`);
+            } else if (nextAction === "assistance_level_2") {
+              router.push(`/student/quizzes/${quizId}/assistance/level2`);
+            } else if (nextAction === "assistance_level_3") {
+              router.push(`/student/quizzes/${quizId}/assistance/level3`);
+            } else {
+              // Default ke halaman detail kuis (passed atau max attempts)
+              router.push(`/student/quizzes/${quizId}?refreshStatus=true`);
+            }
+          } else {
+            // Fallback jika nextAction tidak disediakan
+            router.push(`/student/quizzes/${quizId}?refreshStatus=true`);
+          }
         }, 1500);
       } else {
         toast.error(result.message || "Gagal mengirim jawaban");

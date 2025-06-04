@@ -4,6 +4,7 @@ import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { AssistanceRequirement, StudentQuizProgress } from "@prisma/client";
 
 // Schema validasi untuk request
 const toggleStatusSchema = z.object({
@@ -16,7 +17,9 @@ export async function POST(request: NextRequest) {
   try {
     // Autentikasi: pastikan yang mengakses adalah guru
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== UserRole.TEACHER) {
+    const user = session?.user as { role?: UserRole, id?: string };
+
+    if (!user || user.role !== UserRole.TEACHER || !user.id) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Only teachers can modify student statuses." },
         { status: 401 }
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (quiz.class && quiz.class.teacherId !== (session.user as any).id) {
+    if (quiz.class && quiz.class.teacherId !== user.id) {
       return NextResponse.json(
         { success: false, message: "You don't have permission to modify this quiz" },
         { status: 403 }
@@ -57,17 +60,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Tentukan status dan alur bantuan berdasarkan nilai isPassed
-    const finalStatus = isPassed === true 
-      ? "passed" 
+    const finalStatus: StudentQuizProgress['finalStatus'] = isPassed === true 
+      ? "PASSED" 
       : isPassed === false 
-        ? "failed" 
-        : "ongoing";
+        ? "FAILED" 
+        : null;
     
-    const assistanceRequired = isPassed === true 
-      ? "NONE" 
+    const assistanceRequiredValue: AssistanceRequirement = isPassed === true 
+      ? AssistanceRequirement.NONE 
       : isPassed === false 
-        ? "ASSISTANCE_LEVEL1" 
-        : "NONE"; // Jika on going, tidak ada bantuan yang diperlukan
+        ? AssistanceRequirement.ASSISTANCE_LEVEL1 
+        : AssistanceRequirement.NONE;
     
     const currentAttempt = isPassed === true 
       ? 1 
@@ -78,7 +81,7 @@ export async function POST(request: NextRequest) {
     // Cari atau buat progress kuis siswa
     const progress = await prisma.studentQuizProgress.upsert({
       where: {
-        quizId_studentId: {
+        studentId_quizId: {
           quizId,
           studentId
         }
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
       update: {
         lastAttemptPassed: isPassed,
         finalStatus,
-        assistanceRequired
+        assistanceRequired: assistanceRequiredValue
       },
       create: {
         quizId,
@@ -94,8 +97,7 @@ export async function POST(request: NextRequest) {
         lastAttemptPassed: isPassed,
         finalStatus,
         currentAttempt,
-        maxAttempts: 4,
-        assistanceRequired,
+        assistanceRequired: assistanceRequiredValue,
         level1Completed: false,
         level2Completed: false,
         level3Completed: false,

@@ -34,7 +34,8 @@ export async function resetStudentQuizAttempts(studentId: string, quizId: string
       }
     });
 
-    if (!quiz || quiz.class.teacherId !== teacherId) {
+    // Periksa apakah kuis dan kelasnya ada
+    if (!quiz || !quiz.class || quiz.class.teacherId !== teacherId) {
       return {
         success: false,
         message: "Anda tidak memiliki akses untuk mereset percobaan kuis ini"
@@ -66,11 +67,11 @@ export async function resetStudentQuizAttempts(studentId: string, quizId: string
       data: {
         currentAttempt: 0,
         lastAttemptPassed: false,
+        failedAttempts: 0,
         assistanceRequired: "NONE",
-        completedLevel1: false,
-        completedLevel2: false,
-        completedLevel3: false,
-        lastSubmissionId: null
+        level1Completed: false,
+        level2Completed: false,
+        level3Completed: false,
       }
     });
 

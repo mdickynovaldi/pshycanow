@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { DocumentArrowUpIcon, DocumentTextIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { QuizAssistanceLevel3Input } from "@/lib/validations/quiz-assistance";
 import { upsertQuizAssistanceLevel3, deleteQuizAssistanceLevel3 } from "@/lib/actions/quiz-assistance-actions";
@@ -73,7 +73,7 @@ export default function QuizAssistanceLevel3Form({
     });
   };
   
-  const uploadFile = async () => {
+  const uploadFile = useCallback(async () => {
     if (!selectedFile) return;
     
     setIsUploading(true);
@@ -105,13 +105,13 @@ export default function QuizAssistanceLevel3Form({
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [selectedFile]);
   
   useEffect(() => {
     if (selectedFile) {
       uploadFile();
     }
-  }, [selectedFile]);
+  }, [selectedFile, uploadFile]);
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

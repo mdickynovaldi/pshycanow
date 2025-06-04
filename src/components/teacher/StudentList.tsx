@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { PencilIcon, TrashIcon, UserIcon } from "@heroicons/react/24/outline";
 import { deleteStudent } from "@/lib/actions/student-actions";
 import { useRouter } from "next/navigation";
@@ -65,10 +66,12 @@ export default function StudentList({ students }: StudentListProps) {
               <div className="flex items-center">
                 <div className="flex-shrink-0 h-10 w-10">
                   {student.image ? (
-                    <img
+                    <Image
                       className="h-10 w-10 rounded-full"
                       src={student.image}
                       alt={student.name || ""}
+                      width={40}
+                      height={40}
                     />
                   ) : (
                     <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">

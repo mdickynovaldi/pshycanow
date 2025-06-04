@@ -4,16 +4,16 @@ import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+
 import { 
-  QuizSubmissionInput, 
+
   SubmissionGradingInput, 
-  quizSubmissionSchema,
+
   submissionGradingSchema
 } from "@/lib/validations/quiz-submission";
 import { SubmissionStatus, AssistanceRequirement } from "@prisma/client";
-import type { Quiz, QuizSubmission } from "@prisma/client";
-import { z } from "zod";
+
+
 
 // Helper untuk memeriksa apakah pengguna adalah siswa
 async function checkStudentAccess() {
@@ -126,7 +126,16 @@ export async function getStudentQuiz(quizId: string) {
       return { success: false, message: "Kuis tidak ditemukan" };
     }
     
-    // Dapatkan informasi tentang upaya sebelumnya
+    // Dapatkan informasi tentang upaya sebelumnya dan status progress
+    const progress = await prisma.studentQuizProgress.findUnique({
+      where: {
+        studentId_quizId: {
+          studentId: access.userId!,
+          quizId: quizId
+        }
+      }
+    });
+    
     const attempts = await prisma.quizSubmission.findMany({
       where: {
         quizId: quizId,
@@ -142,11 +151,13 @@ export async function getStudentQuiz(quizId: string) {
     const currentAttemptNumber = lastAttempt ? lastAttempt.attemptNumber + 1 : 1;
     const hasPendingAttempt = lastAttempt?.status === SubmissionStatus.PENDING;
     
-    // Batasi hingga 4 percobaan
-    if (currentAttemptNumber > 4 && !hasPendingAttempt) {
+    // VALIDASI UTAMA: Cek failedAttempts, bukan currentAttemptNumber
+    const currentFailedAttempts = progress?.failedAttempts || 0;
+    
+    if (currentFailedAttempts >= 4) {
       return { 
         success: false, 
-        message: "Anda telah mencapai batas maksimum 4 percobaan untuk kuis ini" 
+        message: "Anda telah mencapai batas maksimum 4 kali kegagalan untuk kuis ini dan tidak dapat mengerjakan kuis lagi" 
       };
     }
     
@@ -234,13 +245,19 @@ export async function getStudentAvailableQuizzes() {
         const hasPendingAttempt = lastAttempt?.status === SubmissionStatus.PENDING;
         const hasPassed = attempts.some(a => a.status === SubmissionStatus.PASSED);
         
+        // Cari submission yang lulus dan ambil skor terbaiknya
+        const passedAttempt = attempts.find(a => a.status === SubmissionStatus.PASSED);
+        const bestScore = hasPassed && passedAttempt ? passedAttempt.score : null;
+        
         return {
           ...quiz,
           attemptInfo: {
             attemptCount,
             hasPendingAttempt,
             hasPassed,
-            lastAttempt
+            lastAttempt,
+            passedAttempt,
+            bestScore
           }
         };
       })
@@ -253,16 +270,9 @@ export async function getStudentAvailableQuizzes() {
   }
 }
 
-// Schemas untuk validasi
-const AnswerSchema = z.object({
-  questionId: z.string(),
-  answer: z.string()
-});
 
-const SubmitQuizSchema = z.object({
-  quizId: z.string(),
-  answers: z.array(AnswerSchema)
-});
+
+
 
 /**
  * Mengirimkan jawaban kuis siswa
@@ -296,7 +306,10 @@ export async function submitQuizAnswers(formData: FormData) {
       where: { id: quizId },
       include: { 
         questions: true,
-        class: true
+        class: true,
+        assistanceLevel1: { select: { id: true } },
+        assistanceLevel2: { select: { id: true } },
+        assistanceLevel3: { select: { id: true } }
       }
     });
 
@@ -310,118 +323,276 @@ export async function submitQuizAnswers(formData: FormData) {
     // Proses jawaban
     const answersData = [];
     
-    // Ambil jawaban dari form data
+    // Loop melalui semua pertanyaan dalam kuis
     for (const question of quiz.questions) {
-      const answer = formData.get(`answer_${question.id}`);
-      if (answer) {
+      const studentAnswer = formData.get(`answer-${question.id}`) as string;
+      
+      // Jika jawaban tidak kosong, tambahkan ke array jawaban
+      if (studentAnswer !== null && studentAnswer !== undefined) {
         answersData.push({
           questionId: question.id,
-          studentAnswer: answer.toString(),
-          correctAnswer: question.expectedAnswer || '',
-          // Tidak lagi menentukan isCorrect otomatis
+          studentAnswer: studentAnswer.trim()
         });
       }
     }
-
-    console.log("Collected answers:", answersData.length);
-
-    // Dapatkan attemptNumber berdasarkan submisi sebelumnya
-    let attemptNumber = 1;
-    const lastSubmission = await prisma.quizSubmission.findFirst({
+    
+    // Periksa apakah ada jawaban yang diberikan
+    if (answersData.length === 0) {
+      return {
+        success: false,
+        message: "Tidak ada jawaban yang diberikan"
+      };
+    }
+    
+    // Periksa apakah semua pertanyaan telah dijawab
+    if (answersData.length !== quiz.questions.length) {
+      return {
+        success: false,
+        message: "Semua pertanyaan harus dijawab"
+      };
+    }
+    
+    // Dapatkan progress siswa saat ini SEBELUM increment
+    const currentProgress = await prisma.studentQuizProgress.findUnique({
       where: {
-        quizId,
-        studentId: userId
-      },
-      orderBy: {
-        createdAt: 'desc'
+        studentId_quizId: {
+          studentId: userId,
+          quizId: quizId
+        }
       }
     });
     
-    if (lastSubmission) {
-      // Jika ada submisi sebelumnya, increment attempt number
-      attemptNumber = lastSubmission.attemptNumber + 1;
+    // Hitung attempt number yang seharusnya (sebelum increment)
+    const attemptNumber = currentProgress ? currentProgress.currentAttempt + 1 : 1;
+    
+    // VALIDASI UTAMA: Cek failedAttempts BUKAN currentAttempt/attemptNumber
+    const currentFailedAttempts = currentProgress?.failedAttempts || 0;
+    
+    console.log(`Current attempt will be: ${attemptNumber}, existing currentAttempt: ${currentProgress?.currentAttempt || 0}, currentFailedAttempts: ${currentFailedAttempts}`);
+    
+    // Validasi maksimum FAILED ATTEMPTS (bukan total attempts)
+    if (currentFailedAttempts >= 4) {
+      return {
+        success: false,
+        message: "Anda telah mencapai batas maksimum 4 kali kegagalan untuk kuis ini dan tidak dapat mengerjakan kuis lagi"
+      };
     }
     
-    console.log(`Using attempt number: ${attemptNumber}`);
+    // Update percobaan saat ini di StudentQuizProgress (HANYA SATU KALI)
+    try {
+      const { incrementQuizAttempt } = await import('./quiz-progress-actions');
+      const incrementResult = await incrementQuizAttempt(quizId, userId);
+      console.log("Increment result:", incrementResult);
+    } catch (error) {
+      console.error("Error incrementing quiz attempt:", error);
+      // Lanjutkan meskipun ada error, karena ini tidak kritis
+    }
 
-    // Simpan submisi
+    // Simpan submisi dengan attempt number yang sudah dihitung sebelumnya
     const submission = await prisma.quizSubmission.create({
       data: {
         quizId,
         studentId: userId,
-        status: "PENDING", // Simpan dengan status PENDING agar bisa dinilai guru
-        attemptNumber: attemptNumber,
+        status: "PENDING", // Status awal, akan diubah nanti
+        attemptNumber: attemptNumber, // Gunakan attemptNumber yang sudah dihitung
         feedback: null
       }
     });
 
-    console.log("Created submission:", submission.id);
+    console.log("Created submission:", submission.id, "with attemptNumber:", attemptNumber);
     
-    // Simpan jawaban dengan isCorrect null (menunggu penilaian guru)
+    // Koreksi otomatis - mengevaluasi jawaban dengan tepat berdasarkan expectedAnswer
+    let correctCount = 0;
+    const totalQuestions = quiz.questions.length;
+    let allCorrect = true; // Flag untuk menentukan apakah semua jawaban benar
+    
+    // Simpan jawaban dan lakukan koreksi otomatis
     for (const answer of answersData) {
-      console.log(`Menyimpan jawaban untuk pertanyaan ${answer.questionId}: "${answer.studentAnswer}" (menunggu penilaian)`);
+      const currentQuestion = quiz.questions.find(q => q.id === answer.questionId);
+      let isCorrectValue = false; // Default: jawaban salah
+      
+      if (currentQuestion) {
+        if (currentQuestion.expectedAnswer && currentQuestion.expectedAnswer.trim() !== "") {
+          // Koreksi otomatis dengan membandingkan jawaban dengan expectedAnswer
+          isCorrectValue = currentQuestion.expectedAnswer.trim().toLowerCase() === answer.studentAnswer.trim().toLowerCase();
+          if (isCorrectValue) {
+            correctCount++;
+          } else {
+            allCorrect = false; // Ada jawaban yang salah
+          }
+        } else {
+          // Jika tidak ada expectedAnswer, tidak bisa menentukan benar/salah
+          isCorrectValue = false;
+          allCorrect = false; // Tidak ada expectedAnswer berarti tidak dianggap benar
+        }
+      }
+
+      console.log(`Menyimpan jawaban untuk pertanyaan ${answer.questionId}: "${answer.studentAnswer}". Expected: "${currentQuestion?.expectedAnswer || 'N/A'}". Auto-corrected: ${isCorrectValue}`);
+      
       await prisma.submissionAnswer.create({
         data: {
           submissionId: submission.id,
           questionId: answer.questionId,
           answerText: answer.studentAnswer,
-          isCorrect: null // Ubah menjadi null, menunggu penilaian guru
+          isCorrect: isCorrectValue 
         }
       });
     }
     
-    console.log("Created answers for submission");
-
-    // Update progress siswa
-    let progress = await prisma.studentQuizProgress.findFirst({
-      where: {
-        studentId: userId,
-        quizId
+    // Hitung skor persentase
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+    
+    // Tentukan status kelulusan - PASSED jika skor >= 70% ATAU semua jawaban benar
+    const finalStatus = (score >= 70 || allCorrect) ? SubmissionStatus.PASSED : SubmissionStatus.FAILED;
+    
+    // Update status submission dengan hasil koreksi otomatis
+    await prisma.quizSubmission.update({
+      where: { id: submission.id },
+      data: {
+        status: finalStatus,
+        score: score,
+        correctAnswers: correctCount,
+        totalQuestions: totalQuestions,
+        feedback: (score >= 70 || allCorrect)
+          ? `Selamat! Anda lulus dengan skor ${score}%. ${allCorrect ? 'Semua jawaban benar!' : 'Skor Anda mencapai passing grade 70%.'}`
+          : `Anda benar ${correctCount} dari ${totalQuestions} pertanyaan (${score}%). Passing grade adalah 70%. Silakan coba lagi.`
       }
     });
-
-    if (!progress) {
-      // Buat progress baru
-      progress = await prisma.studentQuizProgress.create({
-        data: {
-          studentId: userId,
-          quizId,
-          currentAttempt: 1,
-          lastAttemptPassed: false,
-          assistanceRequired: false
+    
+    console.log(`Submission ${submission.id} status: ${finalStatus}, Score: ${score}%, All Correct: ${allCorrect}, Passed: ${score >= 70 || allCorrect}`);
+    
+    // Perbarui status kemajuan kuis siswa berdasarkan hasil
+    const studentProgress = await prisma.studentQuizProgress.findUnique({
+      where: { studentId_quizId: { studentId: userId, quizId } }
+    });
+    
+    if (studentProgress) {
+      let newAssistanceRequired = AssistanceRequirement.NONE;
+      let newNextStep = "TRY_MAIN_QUIZ_AGAIN";
+      let newFinalStatus = null;
+      
+      // Pastikan failedAttempts memiliki nilai default yang benar
+      const currentFailedAttempts = studentProgress.failedAttempts || 0;
+      console.log(`Current failed attempts: ${currentFailedAttempts}, Score: ${score}%, Passed: ${score >= 70 || allCorrect}, Attempt number: ${attemptNumber}`);
+      
+      if (score >= 70 || allCorrect) {
+        // Jika lulus (skor >= 70% atau semua benar), tandai sebagai lulus
+        newFinalStatus = SubmissionStatus.PASSED;
+        newNextStep = "QUIZ_PASSED";
+      } else {
+        // Jika tidak lulus, tentukan level bantuan yang diperlukan
+        // GUNAKAN failedAttempts yang akan di-increment untuk menentukan level bantuan
+        const nextFailedAttempts = currentFailedAttempts + 1;
+        
+        if (nextFailedAttempts === 1) {
+          // Kegagalan pertama -> cek bantuan level 1
+          if (quiz.assistanceLevel1) {
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1 as any;
+            newNextStep = "COMPLETE_ASSISTANCE_LEVEL1";
+          } else {
+            newNextStep = "TAKE_MAIN_QUIZ_NOW";
+          }
+        } else if (nextFailedAttempts === 2) {
+          // Kegagalan kedua -> cek bantuan level 2
+          if (quiz.assistanceLevel2) {
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL2 as any;
+            newNextStep = "COMPLETE_ASSISTANCE_LEVEL2";
+          } else if (quiz.assistanceLevel1 && !studentProgress.level1Completed) {
+            // Jika level 2 tidak tersedia tapi level 1 belum selesai, arahkan ke level 1
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1 as any;
+            newNextStep = "COMPLETE_ASSISTANCE_LEVEL1";
+          }
+        } else if (nextFailedAttempts === 3) {
+          // Kegagalan ketiga -> cek bantuan level 3
+          if (quiz.assistanceLevel3) {
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL3 as any;
+            newNextStep = "VIEW_ASSISTANCE_LEVEL3";
+          } else if (quiz.assistanceLevel2 && !studentProgress.level2Completed) {
+            // Jika level 3 tidak tersedia tapi level 2 belum selesai, arahkan ke level 2
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL2 as any;
+            newNextStep = "COMPLETE_ASSISTANCE_LEVEL2";
+          } else if (quiz.assistanceLevel1 && !studentProgress.level1Completed) {
+            // Jika level 2 & 3 tidak tersedia tapa level 1 belum selesai, arahkan ke level 1
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1 as any;
+            newNextStep = "COMPLETE_ASSISTANCE_LEVEL1";
+          }
+        } else if (nextFailedAttempts >= 4) {
+          // Kegagalan keempat -> siswa harus ke bantuan level 3 dulu (jika tersedia)
+          // HANYA dinyatakan failed jika level 3 tidak tersedia atau sudah selesai
+          if (quiz.assistanceLevel3 && !studentProgress.level3Completed) {
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL3 as any;
+            newNextStep = "VIEW_ASSISTANCE_LEVEL3";
+            console.log("4th failed attempt: Directing to assistance level 3");
+          } else {
+            // Sudah 4x gagal DAN sudah melalui semua bantuan yang tersedia
+            newFinalStatus = SubmissionStatus.FAILED;
+            newNextStep = "QUIZ_FAILED_MAX_ATTEMPTS";
+            console.log("4th failed attempt: All assistance completed, marking as FAILED");
+          }
         }
-      });
-      console.log("Created new progress");
-    } else {
-      // Update progress
-      const newAttempt = progress.currentAttempt + 1;
+      }
       
-      // Tentukan level bantuan
-      let assistanceLevel = false;
-      if (newAttempt === 2) assistanceLevel = true;
-      else if (newAttempt === 3) assistanceLevel = true;
-      else if (newAttempt >= 4) assistanceLevel = true;
+      // Hitung failedAttempts yang baru
+      const newFailedAttempts = (score >= 70 || allCorrect) ? currentFailedAttempts : (currentFailedAttempts + 1);
+      console.log(`Updating failedAttempts from ${currentFailedAttempts} to ${newFailedAttempts}`);
       
+      // Update progress dengan status terbaru
       await prisma.studentQuizProgress.update({
-        where: { id: progress.id },
+        where: { id: studentProgress.id },
         data: {
-          currentAttempt: newAttempt,
-          lastAttemptPassed: assistanceLevel,
-          assistanceRequired: assistanceLevel
+          lastAttemptPassed: (score >= 70 || allCorrect),
+          assistanceRequired: newAssistanceRequired,
+          nextStep: newNextStep,
+          finalStatus: newFinalStatus,
+          failedAttempts: newFailedAttempts,
+          lastSubmissionId: submission.id  // Store the reference to the latest submission
         }
       });
-      console.log("Updated progress, new attempt:", newAttempt);
+    } else {
+      console.error("StudentProgress not found after incrementQuizAttempt - this should not happen");
+      
+      // Sebagai fallback, buat progress record jika tidak ada
+      await prisma.studentQuizProgress.upsert({
+        where: { studentId_quizId: { studentId: userId, quizId } },
+        update: {
+          lastAttemptPassed: (score >= 70 || allCorrect),
+          failedAttempts: (score >= 70 || allCorrect) ? 0 : 1,
+          lastSubmissionId: submission.id // Store the reference to the latest submission
+        },
+        create: {
+          studentId: userId,
+          quizId: quizId,
+          currentAttempt: attemptNumber,
+          lastAttemptPassed: (score >= 70 || allCorrect),
+          failedAttempts: (score >= 70 || allCorrect) ? 0 : 1,
+          level1Completed: false,
+          level2Completed: false,
+          level3Completed: false,
+          lastSubmissionId: submission.id // Store the reference to the latest submission
+        }
+      });
     }
-
-    // Revalidasi halaman
+    
+    // Revalidasi path terkait
+    revalidatePath(`/student/quizzes`);
     revalidatePath(`/student/quizzes/${quizId}`);
+
+    const responseMessage = (score >= 70 || allCorrect)
+      ? "Selamat! Anda lulus dengan skor 70% atau lebih."
+      : `Anda benar ${correctCount} dari ${totalQuestions} pertanyaan (${score}%). Passing grade adalah 70%. Silakan coba lagi.`;
 
     return {
       success: true,
-      message: "Jawaban berhasil disimpan. Silakan tunggu penilaian dari guru.",
+      message: responseMessage,
       data: {
         submissionId: submission.id,
-        attemptNumber: attemptNumber
+        attemptNumber: attemptNumber,
+        score: score,
+        status: finalStatus,
+        allCorrect: allCorrect,
+        passed: (score >= 70 || allCorrect),
+        correctCount: correctCount,
+        totalQuestions: totalQuestions
       }
     };
   } catch (error) {
@@ -435,17 +606,28 @@ export async function submitQuizAnswers(formData: FormData) {
 
 // Mendapatkan riwayat submisi kuis siswa
 export async function getStudentSubmissionHistory(quizId: string) {
+  console.log('🔍 getStudentSubmissionHistory called with quizId:', quizId);
+  
   const access = await checkStudentAccess();
+  console.log('🔐 Student access check result:', access);
   
   if (!access.success) {
+    console.error('❌ Access denied:', access.message);
     return { success: false, message: access.message };
   }
   
   try {
+    console.log('🔍 getStudentSubmissionHistory - Query params:', {
+      quizId,
+      studentId: access.userId,
+      assistanceLevel: null
+    });
+    
     const submissions = await prisma.quizSubmission.findMany({
       where: {
         quizId: quizId,
-        studentId: access.userId!
+        studentId: access.userId!,
+        assistanceLevel: null // Hanya ambil submission kuis utama (bukan submission bantuan)
       },
       include: {
         answers: {
@@ -459,6 +641,11 @@ export async function getStudentSubmissionHistory(quizId: string) {
       }
     });
     
+    console.log('📊 getStudentSubmissionHistory - Found submissions:', submissions.length);
+    submissions.forEach((submission, index) => {
+      console.log(`  ${index + 1}. ID: ${submission.id}, Attempt: ${submission.attemptNumber}, Status: ${submission.status}, assistanceLevel: ${submission.assistanceLevel}`);
+    });
+    
     return { success: true, data: submissions };
   } catch (error) {
     console.error("Error fetching submission history:", error);
@@ -469,116 +656,113 @@ export async function getStudentSubmissionHistory(quizId: string) {
 // Mendapatkan status kuis untuk siswa
 export async function getStudentQuizStatus(quizId: string, studentId?: string) {
   try {
-    // Jika studentId tidak diberikan, gunakan session user
-    let userId;
-    
+    let userIdToQuery: string;
     if (!studentId) {
       const session = await getServerSession(authOptions);
-      
-      if (!session?.user) {
-        return { success: false, message: "Anda harus login terlebih dahulu" };
+      if (!session?.user || session.user.role !== UserRole.STUDENT) {
+        return { success: false, message: "Akses ditolak atau sesi tidak valid" };
       }
-      
-      if (session.user.role !== UserRole.STUDENT) {
-        return { success: false, message: "Hanya siswa yang dapat melihat status kuis" };
-      }
-      
-      userId = session.user.id;
+      userIdToQuery = session.user.id;
     } else {
-      userId = studentId;
+      userIdToQuery = studentId;
     }
-    
-    // Dapatkan kuis
-    const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId }
+
+    const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!quiz) return { success: false, message: "Kuis tidak ditemukan" };
+
+    const studentProgressDb = await prisma.studentQuizProgress.findFirst({
+      where: { studentId: userIdToQuery, quizId },
     });
+
+    const MAX_QUIZ_ATTEMPTS = 4;
     
-    if (!quiz) {
-      return { success: false, message: "Kuis tidak ditemukan" };
+    // Definisikan tipe untuk data progress yang akan digunakan
+    // Ini bisa lebih spesifik berdasarkan apa yang benar-benar ada di StudentQuizProgress
+    // dan apa yang dibutuhkan oleh logika di bawah.
+    interface ProgressInternal {
+      currentAttempt: number;
+      lastAttemptPassed: boolean | null;
+      level1Completed: boolean;
+      level2Completed: boolean;
+      level3Completed: boolean;
+      assistanceRequired: AssistanceRequirement | null;
+      finalStatus: SubmissionStatus | null;
+      failedAttempts: number;
+      // Tambahkan properti lain dari StudentQuizProgress yang diakses
+      level2Submitted?: boolean; // Jika ini memang tidak ada di skema, buat opsional
     }
-    
-    // Dapatkan progress siswa
-    let progress = await prisma.studentQuizProgress.findFirst({
-      where: {
-        studentId: userId,
-        quizId
-      }
-    });
-    
-    // Jika belum ada progress, buat default
-    if (!progress) {
-      progress = {
-        id: "",
-        studentId: userId,
-        quizId,
+
+    let progressData: ProgressInternal;
+
+    if (!studentProgressDb) {
+      progressData = {
         currentAttempt: 1,
-        maxAttempts: 4,
-        lastAttemptPassed: false,
+        lastAttemptPassed: null,
         level1Completed: false,
-        level2Submitted: false,
+        level2Submitted: false, // Default jika progress baru
         level2Completed: false,
         level3Completed: false,
-        assistanceRequired: false,
+        assistanceRequired: null,
         finalStatus: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        failedAttempts: 0,
+      };
+    } else {
+      progressData = {
+        currentAttempt: studentProgressDb.currentAttempt,
+        lastAttemptPassed: studentProgressDb.lastAttemptPassed,
+        level1Completed: studentProgressDb.level1Completed,
+        level2Submitted: (studentProgressDb as any).level2Submitted || false, // Fallback jika tidak ada di skema DB
+        level2Completed: studentProgressDb.level2Completed,
+        level3Completed: studentProgressDb.level3Completed,
+        assistanceRequired: studentProgressDb.assistanceRequired,
+        finalStatus: studentProgressDb.finalStatus as SubmissionStatus | null, // Cast jika perlu
+        failedAttempts: studentProgressDb.failedAttempts || 0,
       };
     }
-    
-    // Dapatkan submisi terakhir jika ada
-    let lastSubmission = null;
-    if (progress.lastSubmissionId) {
-      lastSubmission = await prisma.quizSubmission.findUnique({
-        where: { id: progress.lastSubmissionId }
-      });
-    }
-    
-    // Cek apakah bantuan telah diselesaikan
+
     const assistanceStatus = {
       level1: {
-        required: progress.assistanceRequired,
-        completed: progress.level1Completed,
-        available: await hasAssistanceLevel1(quizId)
+        required: progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL1,
+        completed: progressData.level1Completed,
+        available: await hasAssistanceLevel1(quizId),
       },
       level2: {
-        required: progress.assistanceRequired,
-        submitted: progress.level2Submitted,
-        completed: progress.level2Completed,
-        available: await hasAssistanceLevel2(quizId)
+        required: progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL2,
+        submitted: progressData.level2Submitted || false,
+        completed: progressData.level2Completed,
+        available: await hasAssistanceLevel2(quizId),
       },
       level3: {
-        required: progress.assistanceRequired,
-        completed: progress.level3Completed,
-        available: await hasAssistanceLevel3(quizId)
-      }
+        required: progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL3,
+        completed: progressData.level3Completed,
+        available: await hasAssistanceLevel3(quizId),
+      },
     };
-    
+
     return {
       success: true,
       data: {
         quizId,
-        currentAttempt: progress.currentAttempt,
-        maxAttempts: progress.maxAttempts,
-        lastAttemptPassed: progress.lastAttemptPassed,
-        attemptsRemaining: Math.max(0, progress.maxAttempts - progress.currentAttempt + 1),
-        assistanceRequired: progress.assistanceRequired,
+        currentAttempt: progressData.currentAttempt,
+        maxAttempts: MAX_QUIZ_ATTEMPTS,
+        lastAttemptPassed: progressData.lastAttemptPassed,
+        attemptsRemaining: Math.max(0, MAX_QUIZ_ATTEMPTS - (progressData.failedAttempts || 0)),
+        assistanceRequired: progressData.assistanceRequired,
         assistanceStatus,
-        lastSubmission,
+        lastSubmission: null, // lastSubmission tidak lagi diambil dari progress.lastSubmissionId
         canTakeQuiz: (
-          // Dapat mengambil kuis jika:
-          // 1. Belum mencapai batas maksimum percobaan
-          progress.currentAttempt <= progress.maxAttempts &&
-          // 2. Tidak ada status final atau status final bukan "failed"
-          progress.finalStatus !== "failed" &&
-          // 3. Tidak memerlukan bantuan atau bantuan telah selesai
-          (progress.assistanceRequired === false ||
-            (progress.assistanceRequired && progress.level1Completed) ||
-            (progress.assistanceRequired && progress.level2Completed) ||
-            (progress.assistanceRequired && progress.level3Completed)
+          (progressData.failedAttempts || 0) < 4 &&
+          progressData.finalStatus !== SubmissionStatus.FAILED &&
+          progressData.finalStatus !== SubmissionStatus.PASSED && // Tidak bisa mengerjakan lagi jika sudah lulus
+          (progressData.assistanceRequired === null ||
+            (progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL1 && progressData.level1Completed) ||
+            (progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL2 && progressData.level2Completed) ||
+            (progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL3 && progressData.level3Completed)
           )
         ),
-        finalStatus: progress.finalStatus
-      }
+        finalStatus: progressData.finalStatus,
+        failedAttempts: progressData.failedAttempts || 0,
+      },
     };
   } catch (error) {
     console.error("Error getting student quiz status:", error);
@@ -718,8 +902,7 @@ export async function getPendingSubmissionsWithRawSQL() {
       where: {
         quizId: {
           in: quizIds
-        },
-        status: "PENDING"
+        }
       },
       include: {
         quiz: {
@@ -728,10 +911,14 @@ export async function getPendingSubmissionsWithRawSQL() {
           }
         },
         student: true
-      }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 50 // Batasi jumlah hasil untuk performa
     });
     
-    console.log(`Menemukan ${pendingSubmissions.length} submisi pending`);
+    console.log(`Menemukan ${pendingSubmissions.length} submisi`);
     
     // Format data untuk UI
     const formattedSubmissions = pendingSubmissions.map(sub => ({
@@ -742,6 +929,7 @@ export async function getPendingSubmissionsWithRawSQL() {
       updatedAt: sub.updatedAt,
       attemptNumber: sub.attemptNumber,
       status: sub.status,
+      score: sub.score,
       quiz: {
         id: sub.quiz.id,
         title: sub.quiz.title,
@@ -856,7 +1044,7 @@ export async function getStudentSubmissionDetail(submissionId: string) {
     
     // Hitung skor dan jawaban benar
     let correctAnswers = 0;
-    let totalQuestions = submission.answers.length;
+    const totalQuestions = submission.answers.length;
     
     submission.answers.forEach(answer => {
       if (answer.isCorrect === true) {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, UserPlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { UserPlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { enrollStudents } from "@/lib/actions/class-actions";
 
 interface Student {

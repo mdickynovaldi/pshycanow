@@ -5,11 +5,7 @@ import { getStudentById } from "@/lib/actions/student-actions";
 import StudentForm from "@/components/teacher/StudentForm";
 
 // Halaman edit siswa untuk guru
-export default async function EditStudentPage({
-  params,
-}: {
-  params: { studentId: string };
-}) {
+export default async function EditStudentPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   

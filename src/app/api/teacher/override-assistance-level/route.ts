@@ -23,14 +23,15 @@ export async function POST(request: NextRequest) {
   try {
     // Autentikasi: pastikan yang mengakses adalah guru
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== UserRole.TEACHER) {
+    const user = session?.user as { role?: UserRole, id?: string }; 
+
+    if (!user || user.role !== UserRole.TEACHER || !user.id) { 
       return NextResponse.json(
         { success: false, message: "Unauthorized. Only teachers can modify assistance levels." },
         { status: 401 }
       );
     }
     
-    // Parse body request
     const body = await request.json();
     const validationResult = overrideSchema.safeParse(body);
     
@@ -43,7 +44,6 @@ export async function POST(request: NextRequest) {
     
     const { studentId, quizId, overrideSystemFlow, manuallyAssignedLevel } = validationResult.data;
     
-    // Periksa apakah guru adalah pengajar dari kelas yang berisi kuis
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
       include: { class: true }
@@ -56,42 +56,39 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (quiz.class && quiz.class.teacherId !== (session.user as any).id) {
+    if (quiz.class && quiz.class.teacherId !== user.id) { 
       return NextResponse.json(
-        { success: false, message: "You don't have permission to modify this quiz" },
+        { success: false, message: "You don\'t have permission to modify this quiz" },
         { status: 403 }
       );
     }
     
-    // Cari atau buat progress kuis siswa
     const progress = await prisma.studentQuizProgress.upsert({
       where: {
-        quizId_studentId: {
+        studentId_quizId: {
           quizId,
           studentId
         }
       },
       update: {
         overrideSystemFlow,
-        manuallyAssignedLevel: manuallyAssignedLevel as AssistanceRequirement || null,
+        manuallyAssignedLevel: manuallyAssignedLevel as AssistanceRequirement | null,
         level3AccessGranted: manuallyAssignedLevel === "ASSISTANCE_LEVEL3" ? true : false
       },
       create: {
         quizId,
         studentId,
         overrideSystemFlow,
-        manuallyAssignedLevel: manuallyAssignedLevel as AssistanceRequirement || null,
+        manuallyAssignedLevel: manuallyAssignedLevel as AssistanceRequirement | null, 
         level3AccessGranted: manuallyAssignedLevel === "ASSISTANCE_LEVEL3" ? true : false,
         currentAttempt: 0,
-        maxAttempts: 4,
-        assistanceRequired: AssistanceRequirement.NONE,
+        assistanceRequired: manuallyAssignedLevel as AssistanceRequirement | null || AssistanceRequirement.NONE, 
         level1Completed: false,
         level2Completed: false,
         level3Completed: false
       }
     });
     
-    // Revalidasi path terkait
     revalidatePath(`/teacher/submissions`);
     revalidatePath(`/student/quizzes/${quizId}`);
     

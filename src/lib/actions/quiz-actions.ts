@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { 
   CreateQuizInput, 
   UpdateQuizInput,
@@ -13,7 +12,6 @@ import {
   updateQuizSchema,
   questionSchema
 } from "@/lib/validations/quiz";
-import { Quiz, Question } from "@/types";
 
 // Helper untuk memeriksa apakah pengguna adalah guru
 async function checkTeacherAccess() {
@@ -113,7 +111,10 @@ export async function getQuizById(id: string) {
         },
         questions: {
           orderBy: { createdAt: "asc" }
-        }
+        },
+        assistanceLevel1: true,
+        assistanceLevel2: true,
+        assistanceLevel3: true
       }
     });
     

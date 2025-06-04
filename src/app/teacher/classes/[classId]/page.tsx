@@ -7,11 +7,7 @@ import { ArrowLeftIcon, PencilIcon, UserPlusIcon } from "@heroicons/react/24/out
 import StudentList from "@/components/teacher/StudentList";
 
 // Halaman detail kelas untuk guru
-export default async function ClassDetailPage({
-  params,
-}: {
-  params: { classId: string };
-}) {
+export default async function ClassDetailPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useParams } from "next/navigation";
 import QuizAssistanceLevel1Form from "@/components/teacher/QuizAssistanceLevel1Form";
@@ -27,7 +27,7 @@ export default function QuizAssistancePage() {
   const [level2Data, setLevel2Data] = useState<QuizAssistanceLevel2 | null>(null);
   const [level3Data, setLevel3Data] = useState<QuizAssistanceLevel3 | null>(null);
   
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [l1, l2, l3] = await Promise.all([
@@ -49,11 +49,11 @@ export default function QuizAssistancePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [quizId]);
   
   useEffect(() => {
     loadData();
-  }, [quizId]);
+  }, [loadData]);
   
   const handleDataSaved = () => {
     loadData();

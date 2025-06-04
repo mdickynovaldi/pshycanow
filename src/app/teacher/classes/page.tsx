@@ -2,8 +2,6 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { getTeacherClasses } from "@/lib/actions/class-actions";
-import Link from "next/link";
-import { PlusIcon } from "@heroicons/react/24/outline";
 import ClassCard from "@/components/teacher/ClassCard";
 import NewClassButton from "@/components/teacher/NewClassButton";
 

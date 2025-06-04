@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     // Autentikasi: pastikan yang mengakses adalah guru
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== UserRole.TEACHER) {
+    if (!session?.user || (session.user as { role?: UserRole }).role !== UserRole.TEACHER) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Only teachers can modify assistance levels." },
         { status: 401 }

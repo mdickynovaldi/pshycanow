@@ -14,8 +14,15 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const userId = (session.user as any).id;
-    const userRole = (session.user as any).role;
+    const userId = (session.user as { id?: string }).id;
+    const userRole = (session.user as { role?: UserRole }).role;
+    
+    if (!userId || !userRole) {
+      return NextResponse.json(
+        { success: false, message: "Invalid user session" },
+        { status: 401 }
+      );
+    }
     
     const quizId = request.nextUrl.searchParams.get("quizId");
     let studentId = request.nextUrl.searchParams.get("studentId");
@@ -45,9 +52,9 @@ export async function GET(request: NextRequest) {
     // Cari progress siswa
     const progress = await prisma.studentQuizProgress.findUnique({
       where: {
-        quizId_studentId: {
-          quizId,
-          studentId: studentId as string
+        studentId_quizId: {
+          studentId: studentId as string,
+          quizId: quizId,
         }
       }
     });
@@ -86,8 +93,8 @@ export async function GET(request: NextRequest) {
       id: progress.id,
       currentAttempt: progress.currentAttempt,
       assistanceRequired: progress.assistanceRequired,
-      overrideSystemFlow: (progress as any).overrideSystemFlow,
-      manuallyAssignedLevel: (progress as any).manuallyAssignedLevel
+      overrideSystemFlow: (progress as { overrideSystemFlow?: boolean }).overrideSystemFlow,
+      manuallyAssignedLevel: (progress as { manuallyAssignedLevel?: string | null }).manuallyAssignedLevel
     });
     
     return NextResponse.json({

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeftIcon, PlusIcon, XMarkIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import { createQuiz, updateQuiz } from "@/lib/actions/quiz-actions";
 import { Quiz, Question } from "@/types";
@@ -188,20 +189,26 @@ export default function QuizForm({ quiz, classes = [] }: QuizFormProps) {
     
     try {
       let response;
-      const dataToSend = {
-        ...formData,
+      const baseData = {
+        title: formData.title,
+        description: formData.description,
+        classId: formData.classId || undefined,
         questions: questions.map(q => ({
           id: q.id,
           text: q.text || "",
-          imageUrl: q.imageUrl,
-          expectedAnswer: q.expectedAnswer
+          imageUrl: q.imageUrl === null ? undefined : q.imageUrl,
+          expectedAnswer: q.expectedAnswer === null ? undefined : q.expectedAnswer
         }))
       };
       
       if (isEditMode && quiz?.id) {
-        response = await updateQuiz(quiz.id, dataToSend);
+        const dataToUpdate = {
+          ...baseData,
+          id: quiz.id,
+        };
+        response = await updateQuiz(quiz.id, dataToUpdate);
       } else {
-        response = await createQuiz(dataToSend);
+        response = await createQuiz(baseData);
       }
       
       if (response.success) {
@@ -325,7 +332,7 @@ export default function QuizForm({ quiz, classes = [] }: QuizFormProps) {
             {questions.length === 0 ? (
               <div className="text-center py-8 bg-gray-50 rounded-lg">
                 <p className="text-gray-500">
-                  Kuis belum memiliki pertanyaan. Klik "Tambah Pertanyaan" untuk menambahkan pertanyaan.
+                  Kuis belum memiliki pertanyaan. Klik Tambah Pertanyaan untuk menambahkan pertanyaan.
                 </p>
               </div>
             ) : (
@@ -388,10 +395,11 @@ export default function QuizForm({ quiz, classes = [] }: QuizFormProps) {
                       {question.imageUrl ? (
                         <div className="mb-2">
                           <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden">
-                            <img
+                            <Image
                               src={question.imageUrl}
                               alt={`Gambar untuk pertanyaan ${index + 1}`}
-                              className="object-contain w-full h-full"
+                              layout="fill"
+                              objectFit="contain"
                             />
                             <button
                               type="button"

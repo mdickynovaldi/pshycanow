@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
+import * as fs from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,9 +69,8 @@ export async function POST(request: NextRequest) {
     // Buat direktori jika belum ada
     try {
       await writeFile(filePath, Buffer.from(buffer));
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
-        const fs = require('fs');
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'ENOENT') {
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }

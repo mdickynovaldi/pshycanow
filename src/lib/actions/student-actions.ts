@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import { 
   CreateStudentInput, 
@@ -12,7 +11,6 @@ import {
   createStudentSchema,
   updateStudentSchema
 } from "../../lib/validations/student";
-import { Student } from "../../types";
 
 // Helper untuk memeriksa apakah pengguna adalah guru
 async function checkTeacherAccess() {
@@ -334,7 +332,7 @@ export async function getStudentDetails(studentId: string) {
     // Hitung statistik
     const completedQuizzes = quizSubmissions.filter(s => s.status === "PASSED").length;
     const totalSubmissions = quizSubmissions.length;
-    let averageScore = 0;
+    const averageScore = 0;
 
     // Format data untuk respons
     const formattedData = {

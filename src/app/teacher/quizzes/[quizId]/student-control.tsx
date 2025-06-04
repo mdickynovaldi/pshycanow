@@ -5,7 +5,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
@@ -13,12 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
+
 import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -36,7 +34,6 @@ import {
   Eye,
   X
 } from "lucide-react";
-import { AssistanceRequirement } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 interface Student {

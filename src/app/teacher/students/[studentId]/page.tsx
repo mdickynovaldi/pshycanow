@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Loader2, AlertCircle, BookOpen, Clock, CheckCircle, 
-  XCircle, User, ChevronLeft, RefreshCw, RotateCcw 
+  XCircle, User, ChevronLeft,  RotateCcw 
 } from "lucide-react";
 import { 
   getStudentDetails, 

@@ -4,18 +4,16 @@ import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { 
   QuizAssistanceLevel1Input,
-  AssistanceQuestionYesNoInput,
   QuizAssistanceLevel2Input,
-  AssistanceQuestionEssayInput, 
   QuizAssistanceLevel3Input,
   quizAssistanceLevel1Schema,
   quizAssistanceLevel2Schema,
   quizAssistanceLevel3Schema
 } from "@/lib/validations/quiz-assistance";
 import { writeFile } from "fs/promises";
+import * as fs from 'fs';
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 
@@ -376,7 +374,6 @@ export async function uploadPdfFile(file: File) {
       await writeFile(filePath, Buffer.from(buffer));
     } catch (error: any) {
       if (error.code === 'ENOENT') {
-        const fs = require('fs');
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
@@ -481,7 +478,7 @@ export async function deleteQuizAssistanceLevel3(quizId: string) {
       });
       
       // TODO: Hapus file PDF jika diinginkan
-      // const fs = require('fs');
+      // Untuk menggunakan fs, pastikan sudah diimpor di atas (import * as fs from 'fs';)
       // const pdfPath = path.join(process.cwd(), "public", assistanceLevel3.pdfUrl);
       // if (fs.existsSync(pdfPath)) {
       //   fs.unlinkSync(pdfPath);

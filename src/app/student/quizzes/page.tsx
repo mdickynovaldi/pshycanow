@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { 
   AcademicCapIcon,
-  ClockIcon,
+
   DocumentTextIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -20,7 +20,6 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { getStudentAvailableQuizzes } from "@/lib/actions/quiz-submission-actions";
-import { SubmissionStatus } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -55,24 +54,41 @@ export default function StudentQuizzesPage() {
   const getQuizStatusIndicator = (quiz: any) => {
     const { attemptInfo } = quiz;
     
+    // Prioritas tertinggi: Jika sudah lulus (PASSED)
     if (attemptInfo.hasPassed) {
       return (
         <div className="flex items-center text-green-600">
           <CheckCircleIcon className="h-5 w-5 mr-1" />
-          <span>Lulus</span>
+          <span className="font-semibold">🎉 Lulus</span>
         </div>
       );
     }
     
+    // Jika ada submission pending (belum dinilai otomatis atau manual)
     if (attemptInfo.hasPendingAttempt) {
-      return (
-        <div className="flex items-center text-yellow-600">
-          <ClockIcon className="h-5 w-5 mr-1" />
-          <span>Menunggu Penilaian</span>
-        </div>
-      );
+      // Cek apakah submission terakhir punya skor
+      const lastAttempt = attemptInfo.lastAttempt;
+      if (lastAttempt && lastAttempt.score !== null && lastAttempt.score !== undefined) {
+        // Jika ada skor, berarti sudah dinilai otomatis tapi belum lulus
+        const scorePercent = lastAttempt.score;
+        return (
+          <div className="flex items-center text-amber-600">
+            <XCircleIcon className="h-5 w-5 mr-1" />
+            <span>Belum Lulus ({scorePercent}%)</span>
+          </div>
+        );
+      } else {
+        // Jika tidak ada skor, mungkin perlu review manual
+        return (
+          <div className="flex items-center text-blue-600">
+            <ClipboardDocumentCheckIcon className="h-5 w-5 mr-1" />
+            <span>Menunggu Penilaian</span>
+          </div>
+        );
+      }
     }
     
+    // Jika sudah mencapai batas percobaan maksimal
     if (attemptInfo.attemptCount >= 4) {
       return (
         <div className="flex items-center text-red-600">
@@ -82,6 +98,7 @@ export default function StudentQuizzesPage() {
       );
     }
     
+    // Default: Kuis tersedia untuk dikerjakan
     return (
       <div className="flex items-center text-blue-600">
         <DocumentTextIcon className="h-5 w-5 mr-1" />
@@ -149,6 +166,28 @@ export default function StudentQuizzesPage() {
                     <span>{quiz.attemptInfo.attemptCount} dari 4</span>
                   </div>
                   
+                  {/* Tampilkan skor jika sudah lulus */}
+                  {quiz.attemptInfo.hasPassed && quiz.attemptInfo.bestScore && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Skor Lulus:</span>
+                      <span className="font-semibold text-green-600">
+                        {quiz.attemptInfo.bestScore}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Tampilkan skor jika pending dan ada skor */}
+                  {quiz.attemptInfo.hasPendingAttempt && !quiz.attemptInfo.hasPassed && 
+                   quiz.attemptInfo.lastAttempt?.score !== null && 
+                   quiz.attemptInfo.lastAttempt?.score !== undefined && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Skor Terakhir:</span>
+                      <span className="font-medium text-amber-600">
+                        {quiz.attemptInfo.lastAttempt.score}%
+                      </span>
+                    </div>
+                  )}
+                  
                   {quiz.attemptInfo.lastAttempt && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Terakhir:</span>
@@ -175,18 +214,24 @@ export default function StudentQuizzesPage() {
                   <Button 
                     size="sm"
                     disabled={
-                      quiz.attemptInfo.hasPendingAttempt || 
-                      quiz.attemptInfo.attemptCount >= 4 ||
-                      quiz.attemptInfo.hasPassed
+                      quiz.attemptInfo.hasPassed ||
+                      quiz.attemptInfo.attemptCount >= 4
+                    }
+                    className={
+                      quiz.attemptInfo.hasPassed 
+                        ? "bg-green-100 text-green-800 border-green-300 cursor-not-allowed"
+                        : quiz.attemptInfo.attemptCount >= 4
+                        ? "bg-red-100 text-red-800 border-red-300 cursor-not-allowed"
+                        : ""
                     }
                   >
-                    {quiz.attemptInfo.hasPendingAttempt 
-                      ? "Menunggu Penilaian" 
-                      : quiz.attemptInfo.hasPassed
-                      ? "Sudah Lulus"
+                    {quiz.attemptInfo.hasPassed 
+                      ? "✅ Sudah Lulus"
+                      : quiz.attemptInfo.hasPendingAttempt 
+                      ? "📊 Lihat Hasil" 
                       : quiz.attemptInfo.attemptCount >= 4
-                      ? "Batas Percobaan Habis"
-                      : "Mulai Kuis"}
+                      ? "❌ Batas Percobaan Habis"
+                      : "🚀 Mulai Kuis"}
                   </Button>
                 </Link>
               </CardFooter>

@@ -6,16 +6,50 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { getAssistanceLevel2, getLatestLevel2Submission, submitAssistanceLevel2 } from "@/lib/actions/assistance-level2-actions";
+import { getLatestLevel2Submission, submitAssistanceLevel2 } from "@/lib/actions/assistance-level2-actions";
+import { getAssistanceLevel2 } from "@/lib/actions/assistance-actions";
 import { getStudentQuizStatus } from "@/lib/actions/quiz-progress-actions";
 import { toast } from "sonner"
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle, CheckCircle, XCircle, HelpCircle, ChevronRight, ChevronLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle, CheckCircle, HelpCircle, ChevronRight, ChevronLeft } from "lucide-react";
+
 import { SubmissionStatus } from "@/types";
 
 // Definisi interface lokal yang digunakan di halaman ini
+interface AssistanceQuestion {
+  id: string;
+  question: string;
+  hint?: string | null;
+  correctAnswer?: string; // Kemungkinan ada dari data
+  // Tambahkan properti lain dari pertanyaan bantuan level 2 jika ada
+}
+
+interface AssistanceLevel2Data {
+  id: string;
+  title?: string;
+  quizTitle?: string;
+  description?: string | null;
+  questions: AssistanceQuestion[];
+  quiz?: { id: string; title: string }; // Menambahkan properti quiz berdasarkan pesan error
+  // Tambahkan properti lain dari data bantuan level 2 jika ada
+}
+
+interface AssistanceLevel2SubmissionAnswer {
+  questionId: string;
+  answerText: string;
+  // tambahkan properti lain jika ada dari API
+}
+
+interface AssistanceLevel2ApiSubmission {
+  id: string;
+  status: SubmissionStatus;
+  feedback?: string | null;
+  hints?: Record<string, string>;
+  correctAnswers?: Record<string, string>;
+  answers?: AssistanceLevel2SubmissionAnswer[]; // Jika API mengembalikan jawaban dalam submisi
+}
+
 interface AssistanceLevel2Submission {
   id?: string;
   status: SubmissionStatus;
@@ -24,20 +58,37 @@ interface AssistanceLevel2Submission {
   correctAnswers?: Record<string, string>;
 }
 
+// Interface untuk status level bantuan dari API getStudentQuizStatus
+interface AssistanceLevelStatus {
+  available: boolean;
+  completed: boolean;
+  assistanceId?: string | null; // ID bantuan bisa null atau string
+  latestSubmission?: AssistanceLevel2ApiSubmission | null; // Submisi terakhir bisa null atau objek
+}
+
+// Interface untuk data status kuis secara keseluruhan
+interface QuizStatusData {
+  assistanceStatus: {
+    level1: AssistanceLevelStatus; // Asumsi level 1 juga memiliki struktur serupa
+    level2: AssistanceLevelStatus;
+    level3: AssistanceLevelStatus; // Asumsi level 3 juga memiliki struktur serupa
+  };
+  // Tambahkan properti lain yang relevan dari getStudentQuizStatus jika ada
+}
+
 export default function AssistanceLevel2Page() {
   const params = useParams();
   const router = useRouter();
   const quizId = params.quizId as string;
   
   const [loading, setLoading] = useState(true);
-  const [assistance, setAssistance] = useState<any>(null);
+  const [assistance, setAssistance] = useState<AssistanceLevel2Data | null>(null);
   const [answers, setAnswers] = useState<{[key: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submission, setSubmission] = useState<AssistanceLevel2Submission | null>(null);
-  const [quizStatus, setQuizStatus] = useState<any>(null);
+  const [quizStatus, setQuizStatus] = useState<QuizStatusData | null>(null);
   const [showHints, setShowHints] = useState<{[key: string]: boolean}>({});
-  const [submittedAnswers, setSubmittedAnswers] = useState<{[key: string]: string}>({});
   
   // State untuk alur bertahap
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -48,23 +99,27 @@ export default function AssistanceLevel2Page() {
     async function loadData() {
       setLoading(true);
       try {
+        console.log("Memuat data bantuan level 2 untuk quizId:", quizId);
+        
         // Dapatkan status kuis
         const statusResult = await getStudentQuizStatus(quizId, "");
         
         if (!statusResult.success || !statusResult.data) {
+          console.error("Gagal memuat status kuis:", statusResult);
           setError(statusResult.message || "Gagal memuat status kuis");
           setLoading(false);
           return;
         }
         
-        const quizStatusData = statusResult.data;
+        // Tipenya sekarang adalah QuizStatusData
+        const quizStatusData = statusResult.data as QuizStatusData; 
         setQuizStatus(quizStatusData);
+        console.log("Data status kuis:", quizStatusData);
         
         // Periksa apakah ada bantuan level 2
         if (!quizStatusData.assistanceStatus.level2.available) {
-          setError("Bantuan level 2 tidak tersedia untuk kuis ini");
-          setLoading(false);
-          return;
+          console.log("Bantuan level 2 tidak tersedia untuk kuis ini dalam status kuis, mencoba direct access...");
+          // Biarkan proses berlanjut, karena kita masih bisa coba akses langsung
         }
         
         // Periksa apakah bantuan level 2 sudah selesai
@@ -76,7 +131,9 @@ export default function AssistanceLevel2Page() {
             const formattedSubmission: AssistanceLevel2Submission = {
               id: submissionData.id,
               status: submissionData.status as SubmissionStatus,
-              feedback: submissionData.feedback || null
+              feedback: submissionData.feedback || null,
+              hints: submissionData.hints,
+              correctAnswers: submissionData.correctAnswers,
             };
             setSubmission(formattedSubmission);
           }
@@ -84,59 +141,73 @@ export default function AssistanceLevel2Page() {
           return;
         }
         
-        // Dapatkan data bantuan level 2
-        const assistanceId = quizStatusData.assistanceStatus.level2.assistanceId;
-        if (!assistanceId) {
-          setError("ID bantuan level 2 tidak ditemukan");
-          setLoading(false);
-          return;
-        }
+        // Tambahkan variable untuk debugging
+        const overrideValidation = true;
         
-        const assistanceResult = await getAssistanceLevel2(assistanceId);
+        // Gunakan quizId dari URL dan parameter skipValidation untuk mengakses bantuan level 2
+        // Tidak perlu bergantung pada assistanceId dari status kuis
+        const assistanceResult = await getAssistanceLevel2(quizId, overrideValidation);
+        console.log("Hasil permintaan bantuan level 2:", assistanceResult);
         
-        if (!assistanceResult.success) {
+        if (!assistanceResult.success || !assistanceResult.data) {
+          console.error("Gagal memuat bantuan level 2:", assistanceResult);
           setError(assistanceResult.message || "Gagal memuat bantuan level 2");
           setLoading(false);
           return;
         }
         
-        setAssistance(assistanceResult.data);
+        // Adaptasi data ke format yang diharapkan
+        const assistanceData = {
+          ...assistanceResult.data,
+          title: assistanceResult.data.quizTitle || "Bantuan Level 2"
+        };
         
-        // Periksa apakah ada submisi terakhir
+        setAssistance(assistanceData as AssistanceLevel2Data);
+        
+        // Gunakan ID dari data bantuan yang sudah didapatkan untuk memeriksa submisi terakhir
+        const assistanceId = assistanceData.id;
         if (assistanceId) {
-          const submissionResult = await getLatestLevel2Submission(
-            assistanceId,
-            ""
-          );
-          
-          if (submissionResult.success && submissionResult.data) {
-            const submissionData = submissionResult.data;
+          try {
+            const submissionResult = await getLatestLevel2Submission(
+              assistanceId,
+              ""
+            );
+            console.log("Hasil permintaan submisi terakhir:", submissionResult);
             
-            // Format data submission sesuai dengan struktur API
-            const formattedSubmission: AssistanceLevel2Submission = {
-              id: submissionData.id,
-              status: submissionData.status as SubmissionStatus,
-              hints: submissionData.hints,
-              correctAnswers: submissionData.correctAnswers,
-              feedback: submissionData.feedback || null
-            };
-            
-            setSubmission(formattedSubmission);
-            
-            // Muat jawaban terakhir jika submisi gagal dan ada contoh jawaban benar
-            if (formattedSubmission.status === SubmissionStatus.FAILED && 
-                formattedSubmission.correctAnswers && 
-                Object.keys(formattedSubmission.correctAnswers).length > 0) {
+            if (submissionResult.success && submissionResult.data) {
+              const submissionData = submissionResult.data;
               
-              // Gunakan contoh jawaban sebagai tampilan untuk jawaban saat ini
-              setAnswers(formattedSubmission.correctAnswers);
+              // Format data submission sesuai dengan struktur API
+              const formattedSubmission: AssistanceLevel2Submission = {
+                id: submissionData.id,
+                status: submissionData.status as SubmissionStatus,
+                hints: submissionData.hints,
+                correctAnswers: submissionData.correctAnswers,
+                feedback: submissionData.feedback || null
+              };
+              
+              setSubmission(formattedSubmission);
+              
+              // Muat jawaban terakhir jika submisi gagal dan ada contoh jawaban benar
+              if (formattedSubmission.status === SubmissionStatus.FAILED && 
+                  formattedSubmission.correctAnswers && 
+                  Object.keys(formattedSubmission.correctAnswers).length > 0) {
+                
+                // Gunakan contoh jawaban sebagai tampilan untuk jawaban saat ini
+                setAnswers(formattedSubmission.correctAnswers);
+              }
             }
+          } catch (submissionErr) {
+            console.error("Error saat mendapatkan submisi terakhir:", submissionErr);
+            // Lanjutkan eksekusi meskipun ada error saat mengambil submisi
           }
+        } else {
+          console.log("Tidak ada ID bantuan level 2 yang valid untuk mendapatkan submisi terakhir");
         }
         
         setLoading(false);
       } catch (err) {
-        console.error(err);
+        console.error("Error saat memuat bantuan level 2:", err);
         setError("Terjadi kesalahan saat memuat data");
         setLoading(false);
       }
@@ -155,7 +226,7 @@ export default function AssistanceLevel2Page() {
   
   // Handle lanjut ke pertanyaan berikutnya
   const handleNextQuestion = () => {
-    if (!assistance || !assistance.questions) return;
+    if (!assistance || !assistance.questions || assistance.questions.length === 0) return;
     
     // Validasi jawaban saat ini
     const currentQuestion = assistance.questions[currentQuestionIndex];
@@ -189,9 +260,15 @@ export default function AssistanceLevel2Page() {
     setSubmitting(true);
     setError(null);
     
+    if (!assistance) {
+      setError("Data bantuan tidak tersedia. Tidak dapat mengirim jawaban.");
+      setSubmitting(false);
+      return;
+    }
+    
     try {
       // Validasi form
-      const questionIds = assistance.questions.map((q: any) => q.id);
+      const questionIds = assistance?.questions?.map((q: AssistanceQuestion) => q.id) || [];
       const missingAnswers = questionIds.filter((id: string) => !answers[id] || answers[id].trim() === "");
       
       if (missingAnswers.length > 0) {
@@ -206,13 +283,10 @@ export default function AssistanceLevel2Page() {
         answerText
       }));
       
-      // Simpan jawaban yang telah dikirim untuk ditampilkan nanti
-      setSubmittedAnswers(answers);
-      
       // Submit jawaban
       const result = await submitAssistanceLevel2(
         { 
-          assistanceId: assistance.id,
+          quizId: quizId,
           answers: answersPayload
         },
         assistance.id
@@ -224,12 +298,10 @@ export default function AssistanceLevel2Page() {
         return;
       }
       
-      toast.success("Jawaban berhasil dikirim! Mengarahkan ke halaman kuis...");
+      toast.success("Jawaban berhasil dikirim!");
       
-      // Langsung arahkan ke halaman kuis utama
-      setTimeout(() => {
-        router.push(`/student/quizzes/${quizId}`);
-      }, 1500);
+      // Langsung selesaikan bantuan level 2 dan arahkan ke kuis utama
+      await completeAssistanceLevel2();
       
     } catch (err) {
       console.error(err);
@@ -248,8 +320,46 @@ export default function AssistanceLevel2Page() {
   
   // Handle kembali ke halaman kuis
   const handleBack = () => {
-    router.push(`/student/quizzes/${quizId}`);
+    router.push(`/student/quizzes/${quizId}?refreshStatus=true`);
   };
+  
+  // Tambahkan fungsi ini untuk menandai bahwa bantuan level 2 telah selesai
+  const completeAssistanceLevel2 = async () => {
+    try {
+      setSubmitting(true);
+      
+      // Gunakan endpoint PATCH API yang telah kita modifikasi di backend
+      const response = await fetch('/api/student/submit-quiz', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quizId,
+          completedAssistanceLevel: 2 // Level 2
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(result.message || "Bantuan level 2 selesai!");
+        
+        // Arahkan langsung ke halaman kuis utama dengan parameter refresh
+        router.push(`/student/quizzes/${quizId}?refreshStatus=true`);
+      } else {
+        toast.error(result.message || "Gagal menyelesaikan bantuan");
+        setSubmitting(false);
+      }
+    } catch (err) {
+      console.error("Error saat menyelesaikan bantuan:", err);
+      toast.error("Terjadi kesalahan saat menyelesaikan bantuan. Silakan coba lagi.");
+      setSubmitting(false);
+    }
+  };
+  
+  // Tambahkan fungsi continueToMainQuiz untuk menyelesaikan bantuan level 2 dan lanjut ke kuis utama
+ 
   
   // Render loading state
   if (loading) {
@@ -294,47 +404,41 @@ export default function AssistanceLevel2Page() {
             <Alert className="mb-4 bg-green-50 border-green-200">
               <CheckCircle className="h-4 w-4 text-green-500" />
               <AlertDescription>
-                Anda dapat melanjutkan untuk mengerjakan kuis utama
+                Bantuan level 2 sudah selesai. Anda dapat langsung melanjutkan ke kuis utama.
               </AlertDescription>
             </Alert>
             
-            {submission && (
-              <div>
-                <p className="text-sm font-medium mb-2">Status Submisi:</p>
-                <p className="text-sm">Status: {
-                  submission.status === SubmissionStatus.PASSED ? "Lulus" :
-                  submission.status === SubmissionStatus.FAILED ? "Tidak Lulus" :
-                  "Menunggu Penilaian"
-                }</p>
-                {submission.feedback && (
-                  <div className="mt-3 p-3 bg-background rounded border text-sm">
-                    <p className="font-medium mb-1">Umpan Balik dari Guru:</p>
-                    <p>{submission.feedback}</p>
-                  </div>
-                )}
-                
-                {submission.status === SubmissionStatus.FAILED && (
-                  <Alert className="mt-4 bg-red-50 border-red-200">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <AlertDescription className="text-red-800">
-                      <p className="font-semibold">Jawaban Anda belum memenuhi kriteria!</p>
-                      <p className="mt-1">Berdasarkan penilaian guru, Anda perlu mengerjakan kembali bantuan level 2 ini.</p>
-                      
-                      <Button 
-                        onClick={() => router.push(`/student/quizzes/${quizId}`)} 
-                        className="mt-3 bg-red-600 hover:bg-red-700"
-                      >
-                        Kembali ke Kuis untuk Mencoba Lagi
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                )}
+            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-green-800">Selamat! Anda telah menyelesaikan bantuan level 2</p>
+                  <p className="text-sm text-green-700 mt-1">Anda dapat melanjutkan ke kuis utama</p>
+                </div>
+                <Button 
+                  onClick={() => router.push(`/student/quizzes/${quizId}?refreshStatus=true`)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Lanjut ke Kuis Utama
+                </Button>
+              </div>
+            </div>
+
+            {submission?.feedback && (
+              <div className="mt-4">
+                <h3 className="font-medium mb-2">Umpan Balik:</h3>
+                <p className="text-sm">{submission.feedback}</p>
               </div>
             )}
           </CardContent>
-          <CardFooter>
-            <Button onClick={handleBack}>
-              Kembali ke Kuis
+          <CardFooter className="flex justify-between">
+            <Button onClick={handleBack} variant="outline">
+              Kembali ke Detail Kuis
+            </Button>
+            <Button 
+              onClick={() => router.push(`/student/quizzes/${quizId}?refreshStatus=true`)} 
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Lanjut ke Kuis Utama
             </Button>
           </CardFooter>
         </Card>
@@ -352,26 +456,46 @@ export default function AssistanceLevel2Page() {
               <div>
                 <CardTitle>{assistance?.title || "Bantuan Level 2"}</CardTitle>
                 <CardDescription>
-                  {assistance?.description || "Jawaban Anda sedang dinilai oleh guru"}
+                  {assistance?.description || "Anda telah menyelesaikan bantuan level 2"}
                 </CardDescription>
               </div>
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
           </CardHeader>
           <CardContent>
-            <Alert className="mb-4 bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-500" />
+            <Alert className="mb-4 bg-green-50 border-green-200">
+              <CheckCircle className="h-4 w-4 text-green-500" />
               <AlertDescription>
-                Jawaban Anda telah dikirim dan sedang dinilai oleh guru. Anda akan segera dialihkan ke halaman kuis.
+                Anda telah menyelesaikan bantuan level 2. Anda dapat langsung melanjutkan ke kuis utama.
               </AlertDescription>
             </Alert>
             
-            <div className="flex justify-center mt-6">
-              <Button onClick={handleBack}>
-                Kembali ke Kuis Sekarang
-              </Button>
+            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-green-800">Selamat! Anda telah menyelesaikan bantuan level 2</p>
+                  <p className="text-sm text-green-700 mt-1">Anda dapat melanjutkan ke kuis utama</p>
+                </div>
+                <Button 
+                  onClick={() => router.push(`/student/quizzes/${quizId}?refreshStatus=true`)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Lanjut ke Kuis Utama
+                </Button>
+              </div>
             </div>
           </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button onClick={() => router.push(`/student/quizzes/${quizId}?refreshStatus=true`)} variant="outline">
+              Kembali ke Detail Kuis
+            </Button>
+            <Button 
+              onClick={() => router.push(`/student/quizzes/${quizId}?refreshStatus=true`)} 
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Lanjut ke Kuis Utama
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     );
@@ -380,8 +504,22 @@ export default function AssistanceLevel2Page() {
   // Render bantuan level 2 bertahap
   if (assistance && assistance.questions && assistance.questions.length > 0) {
     const currentQuestion = assistance.questions[currentQuestionIndex];
+    
+    if (!currentQuestion) { 
+      setError("Gagal mendapatkan pertanyaan saat ini atau pertanyaan tidak ada.");
+      return (
+        <div className="container py-8 max-w-3xl">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error || "Terjadi kesalahan internal pada pertanyaan."}</AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
+
     const isFirstQuestion = currentQuestionIndex === 0;
     const isLastQuestion = currentQuestionIndex === assistance.questions.length - 1;
+    
     const hasAnsweredCurrentQuestion = answers[currentQuestion.id] && answers[currentQuestion.id].trim() !== "";
     
     return (

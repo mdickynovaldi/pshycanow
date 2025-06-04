@@ -1,9 +1,7 @@
 import { hash } from "bcryptjs";
 import { prisma } from "../lib/prisma";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
-// Mendapatkan tipe Role dari client Prisma
-type Role = "TEACHER" | "STUDENT";
 
 async function main() {
   console.log("Mulai menambahkan pengguna percobaan...");

@@ -4,13 +4,10 @@ import { authOptions, UserRole } from "@/lib/auth";
 import { getQuizById } from "@/lib/actions/quiz-actions";
 import { prisma } from "@/lib/prisma";
 import QuizForm from "@/components/teacher/QuizForm";
+import { Quiz, QuizAssistanceLevel1, QuizAssistanceLevel2, QuizAssistanceLevel3 } from "@/types";
 
 // Halaman edit kuis untuk guru
-export default async function EditQuizPage({
-  params,
-}: {
-  params: { quizId: string };
-}) {
+export default async function EditQuizPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -25,9 +22,9 @@ export default async function EditQuizPage({
   const quizId = params.quizId;
   
   // Ambil detail kuis
-  const { success, data: quiz, message } = await getQuizById(quizId);
+  const { success, data: quizData, message } = await getQuizById(quizId);
   
-  if (!success || !quiz) {
+  if (!success || !quizData) {
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Edit Kuis</h1>
@@ -37,6 +34,24 @@ export default async function EditQuizPage({
       </div>
     );
   }
+  
+  // Transformasi data kuis agar sesuai dengan tipe Quiz yang diharapkan
+  const quiz: Quiz = {
+    id: quizData.id,
+    title: quizData.title,
+    description: quizData.description,
+    classId: quizData.classId,
+    createdAt: quizData.createdAt,
+    updatedAt: quizData.updatedAt,
+    questions: quizData.questions,
+    class: quizData.class ? {
+      id: quizData.class.id,
+      name: quizData.class.name
+    } : undefined,
+    assistanceLevel1: quizData.assistanceLevel1 as QuizAssistanceLevel1 | undefined,
+    assistanceLevel2: quizData.assistanceLevel2 as QuizAssistanceLevel2 | undefined,
+    assistanceLevel3: quizData.assistanceLevel3 as QuizAssistanceLevel3 | undefined
+  };
   
   // Dapatkan daftar kelas yang dimiliki guru untuk dipilih
   const classes = await prisma.class.findMany({

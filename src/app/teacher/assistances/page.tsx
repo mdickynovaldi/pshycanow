@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { getPendingLevel2Submissions } from "@/lib/actions/assistance-actions";
 import { Loader2, AlertCircle, CheckCircle, User, Calendar, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
 export default function TeacherAssistancesPage() {
   const router = useRouter();

@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { AssistanceRequirement } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
     // Autentikasi: pastikan yang mengakses adalah guru
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== UserRole.TEACHER) {
+    const user = session?.user as { role?: UserRole, id?: string };
+
+    if (!user || user.role !== UserRole.TEACHER || !user.id) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Only teachers can access this data." },
         { status: 401 }
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Pastikan guru adalah pemilik kelas
-    if (quiz.class && quiz.class.teacherId !== (session.user as any).id) {
+    if (quiz.class && quiz.class.teacherId !== user.id) {
       return NextResponse.json(
         { success: false, message: "You don't have permission to access this quiz" },
         { status: 403 }
@@ -154,8 +157,8 @@ export async function GET(request: NextRequest) {
           currentAttempt: progress.currentAttempt,
           lastAttemptPassed: progress.lastAttemptPassed,
           assistanceRequired: progress.assistanceRequired,
-          overrideSystemFlow: (progress as any).overrideSystemFlow || false,
-          manuallyAssignedLevel: (progress as any).manuallyAssignedLevel,
+          overrideSystemFlow: (progress as { overrideSystemFlow?: boolean }).overrideSystemFlow || false,
+          manuallyAssignedLevel: (progress as { manuallyAssignedLevel?: AssistanceRequirement | null }).manuallyAssignedLevel,
           // Tambahkan informasi bantuan
           level1Completed: progress.level1Completed,
           level2Completed: progress.level2Completed,

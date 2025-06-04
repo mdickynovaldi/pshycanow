@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Panduan Konsistensi Kode dan Workspace
+
+## Prinsip Utama
+
+1.  **Ikuti Pola yang Ada**: Saat menulis kode baru atau memodifikasi kode yang sudah ada, selalu usahakan untuk mengikuti gaya, pola, dan struktur kode yang telah diterapkan dalam proyek ini. Konsistensi adalah kunci untuk menjaga keterbacaan dan kemudahan pemeliharaan kode.
+
+2.  **Hindari Duplikasi**: Sebelum membuat file atau folder baru, selalu periksa terlebih dahulu struktur workspace yang ada. Pastikan tidak ada file atau folder dengan fungsi serupa yang sudah ada untuk menghindari redundansi.
+
+3.  **Verifikasi Workspace Sebelum Modifikasi**: Sebelum menambahkan logika baru atau mengubah logika yang sudah ada, luangkan waktu untuk memeriksa kembali workspace. Pahami bagaimana perubahan Anda akan berinteraksi dengan komponen lain dalam sistem untuk mencegah konflik atau perilaku yang tidak diinginkan.

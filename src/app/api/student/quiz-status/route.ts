@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { AssistanceRequirement } from "@prisma/client";
+// import { prisma } from "@/lib/prisma"; // Tidak digunakan secara langsung di sini, tapi mungkin oleh getStudentQuizStatus
+// import { AssistanceRequirement } from "@prisma/client"; // Tidak digunakan secara langsung di sini, tapi mungkin oleh getStudentQuizStatus
 import { getStudentQuizStatus } from "@/lib/actions/quiz-progress-actions";
 
-// Tipe data untuk progres kuis
-interface StudentQuizProgress {
-  id: string;
-  studentId: string;
-  quizId: string;
-  currentAttempt: number;
-  lastAttemptPassed: boolean | null;
-  maxAttempts: number;
-  assistanceRequired: AssistanceRequirement;
-  completedLevel1: boolean;
-  completedLevel2: boolean;
-  completedLevel3: boolean;
-  lastSubmissionId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Tipe data untuk progres kuis (dihapus karena tidak digunakan)
+// interface StudentQuizProgress { ... }
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,44 +31,47 @@ export async function GET(request: NextRequest) {
     
     console.log(`[quiz-status] Mendapatkan status kuis untuk siswa ${userId} dan kuis ${quizId}`);
     
-    // Gunakan fungsi dari actions
     const statusResult = await getStudentQuizStatus(quizId, userId);
     
-    console.log(`[quiz-status] Status: ${JSON.stringify(statusResult.success ? {
-      currentAttempt: statusResult.data?.currentAttempt,
-      assistanceRequired: statusResult.data?.assistanceRequired,
-      lastSubmission: statusResult.data?.lastSubmission ? {
-        id: statusResult.data.lastSubmission.id,
-        status: statusResult.data.lastSubmission.status
+    console.log(`[quiz-status] Status: ${JSON.stringify(statusResult.success && statusResult.data ? {
+      currentAttempt: statusResult.data.currentAttempt,
+      assistanceRequired: statusResult.data.assistanceRequired,
+      lastMainQuizSubmission: statusResult.data.lastMainQuizSubmission ? {
+        // Asumsikan lastMainQuizSubmission memiliki id dan status, sesuaikan jika perlu
+        // id: statusResult.data.lastMainQuizSubmission.id, 
+        status: statusResult.data.lastMainQuizSubmission.status
       } : null
     } : { error: statusResult.message })}`);
     
-    if (!statusResult.success) {
+    if (!statusResult.success || !statusResult.data) { // Periksa juga statusResult.data
       return NextResponse.json({
         success: false,
-        message: statusResult.message
-      }, { status: 500 });
+        message: statusResult.message || "Data status kuis tidak ditemukan"
+      }, { status: 500 }); // atau 404 jika data tidak ditemukan
     }
     
-    // Cek dan ambil submisi terakhir jika belum ada
-    if (!statusResult.data?.lastSubmission) {
-      console.log(`[quiz-status] Tidak ada lastSubmission, mencari submisi terbaru...`);
+    // Bagian ini mungkin tidak lagi diperlukan karena getStudentQuizStatus sudah mengambil lastMainQuizSubmission
+    // Namun, jika ada logika spesifik yang ingin dipertahankan, sesuaikan:
+    // if (!statusResult.data.lastMainQuizSubmission) { 
+    //   console.log(`[quiz-status] Tidak ada lastMainQuizSubmission dari getStudentQuizStatus, mencari submisi terbaru...`);
       
-      const lastSubmission = await prisma.quizSubmission.findFirst({
-        where: {
-          quizId,
-          studentId: userId
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
+    //   const lastSubmissionDirect = await prisma.quizSubmission.findFirst({
+    //     where: {
+    //       quizId,
+    //       studentId: userId,
+    //       assistanceLevel: null // Pastikan hanya mengambil submisi kuis utama
+    //     },
+    //     orderBy: {
+    //       createdAt: 'desc'
+    //     }
+    //   });
       
-      if (lastSubmission) {
-        console.log(`[quiz-status] Menemukan submisi terakhir: ${lastSubmission.id}, status: ${lastSubmission.status}`);
-        statusResult.data.lastSubmission = lastSubmission;
-      }
-    }
+    //   if (lastSubmissionDirect) {
+    //     console.log(`[quiz-status] Menemukan submisi terakhir langsung: ${lastSubmissionDirect.id}, status: ${lastSubmissionDirect.status}`);
+    //     // Anda mungkin perlu menyesuaikan struktur statusResult.data atau cara Anda menggunakannya
+    //     // Contoh: statusResult.data.lastMainQuizSubmission = { status: lastSubmissionDirect.status, score: lastSubmissionDirect.score };
+    //   }
+    // }
     
     return NextResponse.json({
       success: true,

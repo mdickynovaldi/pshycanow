@@ -3,15 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
 import { getQuizById } from "@/lib/actions/quiz-actions";
 import Link from "next/link";
-import { ArrowLeftIcon, PencilIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
 
 // Halaman detail kuis untuk guru
-export default async function QuizDetailPage({
-  params,
-}: {
-  params: { quizId: string };
-}) {
+export default async function QuizDetailPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -193,10 +189,12 @@ export default async function QuizDetailPage({
                       <div className="bg-gray-100 rounded-md p-2 mb-2">
                         <p className="text-sm font-medium text-gray-600 mb-2">Gambar Soal:</p>
                         <div className="relative w-full h-60 bg-gray-200 rounded-md overflow-hidden">
-                          <img
+                          <Image
                             src={question.imageUrl}
                             alt={`Gambar untuk pertanyaan ${index + 1}`}
-                            className="object-contain w-full h-full"
+                            layout="fill"
+                            objectFit="contain"
+                            className="w-full h-full"
                           />
                         </div>
                       </div>

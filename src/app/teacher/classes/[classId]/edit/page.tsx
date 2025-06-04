@@ -4,12 +4,14 @@ import { authOptions, UserRole } from "@/lib/auth";
 import { getClassDetail } from "@/lib/actions/class-actions";
 import EditClassForm from "@/components/teacher/EditClassForm";
 
+// Definisikan tipe untuk props halaman ini
+// type EditClassPageProps = {
+//   params: { classId: string };
+//   searchParams?: { [key: string]: string | string[] | undefined };
+// };
+
 // Halaman edit kelas untuk guru
-export default async function EditClassPage({
-  params,
-}: {
-  params: { classId: string };
-}) {
+export default async function EditClassPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   

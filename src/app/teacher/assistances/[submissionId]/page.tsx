@@ -9,11 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getAssistanceLevel2Submission, gradeAssistanceLevel2Submission } from "@/lib/actions/assistance-actions";
-import { Loader2, AlertCircle, ChevronLeft, Clock, Calendar } from "lucide-react";
+import { Loader2, AlertCircle, ChevronLeft, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { SubmissionStatus } from "@/types";
 
 export default function GradeAssistanceSubmissionPage() {
   const params = useParams();

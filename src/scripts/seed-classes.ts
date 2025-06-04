@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { Role } from "@prisma/client";
+
 
 async function main() {
   console.log("Mulai menambahkan data kelas contoh...");
@@ -65,12 +65,7 @@ async function main() {
     const classStudents = students.slice(0, Math.floor(Math.random() * students.length) + 1);
     
     for (const student of classStudents) {
-      const enrollment = await prisma.classEnrollment.create({
-        data: {
-          classId: newClass.id,
-          studentId: student.id
-        }
-      });
+     
       
       console.log(`Siswa ${student.name} (${student.email}) berhasil didaftarkan ke kelas "${newClass.name}"`);
     }

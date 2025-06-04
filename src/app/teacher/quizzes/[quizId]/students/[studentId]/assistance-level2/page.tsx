@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,11 +37,7 @@ export default function AssistanceLevel2Page() {
   const [saving, setSaving] = useState(false);
   const [studentName, setStudentName] = useState("");
 
-  useEffect(() => {
-    fetchSubmission();
-  }, []);
-
-  const fetchSubmission = async () => {
+  const fetchSubmission = useCallback(async () => {
     try {
       const response = await fetch(`/api/teacher/assistance-level2-submission?quizId=${params.quizId}&studentId=${params.studentId}`);
       
@@ -63,7 +59,11 @@ export default function AssistanceLevel2Page() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.quizId, params.studentId]);
+
+  useEffect(() => {
+    fetchSubmission();
+  }, [fetchSubmission]);
 
   const handleStatusChange = (status: "PASSED" | "FAILED") => {
     if (!submission) return;

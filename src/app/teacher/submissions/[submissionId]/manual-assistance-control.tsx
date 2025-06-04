@@ -14,7 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { AssistanceRequirement } from "@prisma/client";
 
 interface ManualAssistanceControlProps {
   studentId: string;
@@ -27,7 +26,7 @@ interface ManualAssistanceControlProps {
 export default function ManualAssistanceControl({
   studentId,
   quizId,
-  submissionId,
+
   initialOverride = false,
   initialLevel = null
 }: ManualAssistanceControlProps) {

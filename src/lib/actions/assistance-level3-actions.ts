@@ -5,9 +5,6 @@ import { authOptions, UserRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { 
-  AssistanceRequirement
-} from "@/types";
-import { 
   assistanceLevel3Schema
 } from "@/lib/validations/quiz-assistance";
 import * as z from "zod";

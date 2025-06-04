@@ -7,11 +7,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import EnrollStudentsButton from "@/components/teacher/EnrollStudentsButton";
 
-export default async function EnrollStudentsPage({
-  params,
-}: {
-  params: { classId: string };
-}) {
+export default async function EnrollStudentsPage({ params }: any) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -33,7 +29,7 @@ export default async function EnrollStudentsPage({
   }
   
   // Ambil daftar siswa yang tersedia (belum terdaftar di kelas)
-  const { success: studentsSuccess, data: availableStudents } = await getAvailableStudents(classId);
+  const { data: availableStudents } = await getAvailableStudents(classId);
   
   const students = availableStudents || [];
   

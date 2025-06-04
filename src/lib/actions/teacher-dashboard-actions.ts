@@ -3,7 +3,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 
 /**
  * Mendapatkan statistik dasbor untuk guru
@@ -143,7 +142,7 @@ export async function getTeacherDashboardStats() {
       recentQuizzes: recentQuizzes.map(q => ({
         id: q.id,
         title: q.title,
-        className: q.class.name,
+        className: q.class?.name,
         createdAt: q.createdAt
       }))
     };
@@ -207,12 +206,6 @@ export async function getFailedStudents() {
             name: true,
             email: true
           }
-        },
-        lastSubmission: {
-          select: {
-            score: true,
-            createdAt: true
-          }
         }
       }
     });
@@ -220,13 +213,13 @@ export async function getFailedStudents() {
     // Format data untuk respons
     const formattedData = failedStudents.map(fs => ({
       studentId: fs.studentId,
-      studentName: fs.student.name,
-      email: fs.student.email,
+      studentName: fs.student?.name,
+      email: fs.student?.email,
       quizId: fs.quizId,
-      quizTitle: fs.quiz.title,
-      className: fs.quiz.class.name,
-      lastScore: fs.lastSubmission?.score || 0,
-      lastAttemptDate: fs.lastSubmission?.createdAt || new Date()
+      quizTitle: fs.quiz?.title,
+      className: fs.quiz?.class?.name,
+      lastScore: 0,
+      lastAttemptDate: new Date()
     }));
 
     return {
@@ -238,6 +231,140 @@ export async function getFailedStudents() {
     return {
       success: false,
       message: "Gagal mendapatkan daftar siswa yang gagal"
+    };
+  }
+}
+
+/**
+ * Mendapatkan daftar semua siswa yang tidak lulus
+ */
+export async function getAllFailedStudents() {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Anda harus login untuk melihat data siswa"
+      };
+    }
+
+    // Dapatkan semua siswa yang tidak lulus dengan berbagai kondisi
+    const failedStudents = await prisma.studentQuizProgress.findMany({
+      where: {
+        quiz: {
+          class: {
+            teacherId: userId
+          }
+        },
+        OR: [
+          // Siswa yang sudah mencoba dan tidak lulus
+          {
+            lastAttemptPassed: false,
+            currentAttempt: {
+              gt: 0
+            }
+          },
+          // Siswa dengan status final FAILED
+          {
+            finalStatus: "FAILED"
+          },
+          // Siswa yang sudah 4 kali mencoba dan tidak lulus
+          {
+            currentAttempt: 4,
+            lastAttemptPassed: false
+          }
+        ]
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        quiz: {
+          select: {
+            id: true,
+            title: true,
+            class: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        lastSubmission: {
+          select: {
+            score: true,
+            createdAt: true,
+            status: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          updatedAt: "desc"
+        }
+      ]
+    });
+
+    // Dapatkan data submission terakhir untuk siswa yang belum ada lastSubmission
+    const studentsWithLastSubmission = await Promise.all(
+      failedStudents.map(async (progress) => {
+        let lastSubmissionData = progress.lastSubmission;
+        
+        if (!lastSubmissionData) {
+          // Cari submission terakhir jika tidak ada referensi
+          const latestSubmission = await prisma.quizSubmission.findFirst({
+            where: {
+              studentId: progress.studentId,
+              quizId: progress.quizId
+            },
+            orderBy: {
+              createdAt: "desc"
+            },
+            select: {
+              score: true,
+              createdAt: true,
+              status: true
+            }
+          });
+          lastSubmissionData = latestSubmission;
+        }
+
+        return {
+          studentId: progress.student.id,
+          studentName: progress.student.name,
+          email: progress.student.email,
+          quizId: progress.quiz.id,
+          quizTitle: progress.quiz.title,
+          className: progress.quiz.class?.name,
+          currentAttempt: progress.currentAttempt,
+          lastAttemptPassed: progress.lastAttemptPassed,
+          finalStatus: progress.finalStatus,
+          lastScore: lastSubmissionData?.score || 0,
+          lastAttemptDate: lastSubmissionData?.createdAt || progress.updatedAt,
+          submissionStatus: lastSubmissionData?.status || "PENDING",
+          level1Completed: progress.level1Completed,
+          level2Completed: progress.level2Completed,
+          level3Completed: progress.level3Completed,
+          assistanceRequired: progress.assistanceRequired
+        };
+      })
+    );
+
+    return {
+      success: true,
+      data: studentsWithLastSubmission
+    };
+  } catch (error) {
+    console.error("Error fetching all failed students:", error);
+    return {
+      success: false,
+      message: "Gagal mendapatkan daftar siswa yang tidak lulus"
     };
   }
 } 

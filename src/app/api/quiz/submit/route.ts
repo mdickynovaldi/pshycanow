@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaClient } from "@prisma/client";
+// import { PrismaClient } from "@prisma/client";
 
 // Menggunakan fetch API langsung ke database jika Prisma client menyebabkan masalah
 export async function POST(request: Request) {

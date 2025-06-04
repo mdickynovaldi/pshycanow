@@ -7,7 +7,9 @@ export async function GET(request: NextRequest) {
   try {
     // Autentikasi: pastikan yang mengakses adalah guru
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== UserRole.TEACHER) {
+    const user = session?.user as { role?: UserRole, id?: string };
+
+    if (!user || user.role !== UserRole.TEACHER) {
       return NextResponse.json(
         { success: false, message: "Unauthorized. Only teachers can access this data." },
         { status: 401 }
@@ -59,7 +61,7 @@ export async function GET(request: NextRequest) {
     
     // Pastikan guru adalah pemilik kelas
     if (submission.assistance.quiz.class && 
-        submission.assistance.quiz.class.teacherId !== (session.user as any).id) {
+        submission.assistance.quiz.class.teacherId !== user.id) {
       return NextResponse.json(
         { success: false, message: "You don't have permission to access this submission" },
         { status: 403 }

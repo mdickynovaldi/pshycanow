@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Loader2, AlertCircle, ChevronLeft, Check, X, Calendar, Clock } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { Loader2, AlertCircle, ChevronLeft, Check, X, Calendar } from "lucide-react";
 import { getStudentSubmissionDetail } from "@/lib/actions/quiz-submission-actions"; 
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -57,7 +57,7 @@ export default function SubmissionDetailPage() {
       case SubmissionStatus.PASSED:
         return {
           icon: <Check className="h-5 w-5 text-green-500" />,
-          label: "Lulus",
+          label: "Semua Jawaban Benar",
           bgColor: "bg-green-50",
           borderColor: "border-green-200",
           textColor: "text-green-700"
@@ -65,7 +65,7 @@ export default function SubmissionDetailPage() {
       case SubmissionStatus.FAILED:
         return {
           icon: <X className="h-5 w-5 text-destructive" />,
-          label: "Gagal",
+          label: "Ada Jawaban Salah",
           bgColor: "bg-red-50",
           borderColor: "border-red-200",
           textColor: "text-red-700"
@@ -73,11 +73,11 @@ export default function SubmissionDetailPage() {
       case SubmissionStatus.PENDING:
       default:
         return {
-          icon: <Clock className="h-5 w-5 text-amber-500" />,
-          label: "Menunggu Penilaian",
-          bgColor: "bg-amber-50",
-          borderColor: "border-amber-200",
-          textColor: "text-amber-700"
+          icon: <Check className="h-5 w-5 text-blue-500" />,
+          label: "Telah Dinilai Otomatis",
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+          textColor: "text-blue-700"
         };
     }
   };
