@@ -13,10 +13,18 @@ import {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ level: string }> }
+  { params }: { params: { level: string } }
 ) {
-  const { level } = await params;
   try {
+    const { level } = params;
+    
+    if (!level) {
+      return NextResponse.json(
+        { error: "Level parameter is required" },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -26,7 +34,8 @@ export async function POST(
       );
     }
 
-    const { quizId, submissionId, assistanceId, readingTime, isApproved } = await request.json();
+    const body = await request.json();
+    const { quizId, submissionId, assistanceId, readingTime, isApproved } = body;
     
     if (!quizId) {
       return NextResponse.json(
@@ -36,6 +45,14 @@ export async function POST(
     }
 
     const levelNumber = parseInt(level);
+    
+    if (isNaN(levelNumber) || levelNumber < 1 || levelNumber > 3) {
+      return NextResponse.json(
+        { error: "Invalid assistance level" },
+        { status: 400 }
+      );
+    }
+
     let success = false;
 
     switch (levelNumber) {
@@ -102,10 +119,18 @@ export async function POST(
       );
     }
   } catch (error) {
-    console.error(`Error marking assistance level ${level} as completed:`, error);
+    console.error("Error in assistance complete API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
     );
   }
+}
+
+// Method yang tidak didukung
+export async function GET() {
+  return NextResponse.json(
+    { error: "Method not allowed" },
+    { status: 405 }
+  );
 }
