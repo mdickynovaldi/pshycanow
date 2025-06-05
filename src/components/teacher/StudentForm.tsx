@@ -7,6 +7,14 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { createStudent, updateStudent } from "@/lib/actions/student-actions";
 import { CreateStudentInput, UpdateStudentInput } from "@/lib/validations/student";
 
+interface ZodFieldError {
+  _errors: string[];
+}
+
+interface ZodErrorObject {
+  [key: string]: ZodFieldError | string[];
+}
+
 interface UserData {
   id?: string;
   name: string | null;
@@ -96,9 +104,15 @@ export default function StudentForm({ student }: StudentFormProps) {
           const serverErrors: Record<string, string> = {};
           
           // Format error dari zod
-          Object.entries(response.errors as any).forEach(([key, value]: [string, any]) => {
-            if (key !== "_errors" && value._errors && value._errors[0]) {
-              serverErrors[key] = value._errors[0];
+          Object.entries(response.errors as ZodErrorObject).forEach(([key, value]: [string, ZodFieldError | string[]]) => {
+            if (key !== "_errors") {
+              if (Array.isArray(value)) {
+                // Jika value adalah array of strings langsung
+                serverErrors[key] = value[0] || "Error tidak valid";
+              } else if (value._errors && value._errors[0]) {
+                // Jika value adalah ZodFieldError object
+                serverErrors[key] = value._errors[0];
+              }
             }
           });
           

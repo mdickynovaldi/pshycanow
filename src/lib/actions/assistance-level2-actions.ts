@@ -15,6 +15,15 @@ import {
 import * as z from "zod";
 import { markLevel2Completed } from "./quiz-progress-actions";
 
+// Interface untuk session user dengan field tambahan
+interface ExtendedUser {
+  id: string;
+  role: UserRole;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+}
+
 // Helper untuk memeriksa akses
 async function checkAccess() {
   const session = await getServerSession(authOptions);
@@ -23,10 +32,9 @@ async function checkAccess() {
     return { success: false, message: "Anda harus login terlebih dahulu" };
   }
   
-  // Type assertion karena NextAuth session.user seharusnya memiliki id dan role yang ditambahkan
-  // di callback pada auth.ts
-  const userId = (session.user as any).id;
-  const userRole = (session.user as any).role;
+  // Type assertion dengan interface yang tepat
+  const userId = (session.user as ExtendedUser).id;
+  const userRole = (session.user as ExtendedUser).role;
   
   return { success: true, userId, role: userRole };
 }

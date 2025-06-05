@@ -372,8 +372,8 @@ export async function uploadPdfFile(file: File) {
     // Buat direktori jika belum ada
     try {
       await writeFile(filePath, Buffer.from(buffer));
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }

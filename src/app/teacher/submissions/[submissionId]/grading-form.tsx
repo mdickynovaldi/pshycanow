@@ -19,10 +19,63 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import ManualAssistanceControl from "./manual-assistance-control";
 
+interface QuestionData {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  quizId: string;
+  text: string;
+  imageUrl: string | null;
+  expectedAnswer: string | null;
+}
+
+interface AnswerData {
+  submissionId: string;
+  questionId: string;
+  answerText: string;
+  score?: number | null;
+  feedback?: string | null;
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  question: QuestionData;
+}
+
+interface StudentData {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+}
+
+interface QuizData {
+  id: string;
+  title: string;
+}
+
+interface StudentProgress {
+  currentAttempt: number;
+  lastAttemptPassed: boolean | null;
+  overrideSystemFlow?: boolean;
+  manuallyAssignedLevel?: string | null;
+  finalStatus?: string;
+}
+
+interface SubmissionData {
+  id: string;
+  studentId: string;
+  quizId: string;
+  status: SubmissionStatus;
+  submittedAt?: string | Date | null;
+  answers: AnswerData[];
+  student: StudentData;
+  quiz: QuizData;
+}
+
 export default function GradingForm({ submissionId }: { submissionId: string }) {
   const router = useRouter();
   
-  const [submission, setSubmission] = useState<any>(null);
+  const [submission, setSubmission] = useState<SubmissionData | null>(null);
   const [answerGrades, setAnswerGrades] = useState<Record<string, boolean>>({});
   const [answerFeedbacks, setAnswerFeedbacks] = useState<Record<string, string>>({});
   const [generalFeedback, setGeneralFeedback] = useState("");
@@ -33,7 +86,7 @@ export default function GradingForm({ submissionId }: { submissionId: string }) 
   // State untuk manual assistance control
   const [initialOverride, setInitialOverride] = useState(false);
   const [initialLevel, setInitialLevel] = useState<string | null>(null);
-  const [studentProgress, setStudentProgress] = useState<any>(null);
+  const [studentProgress, setStudentProgress] = useState<StudentProgress | null>(null);
   
   useEffect(() => {
     const loadSubmission = async () => {
@@ -43,10 +96,10 @@ export default function GradingForm({ submissionId }: { submissionId: string }) 
         const response = await getSubmissionDetail(submissionId);
         
         if (response.success && response.data) {
-          setSubmission(response.data);
+          const submissionData = response.data as unknown as SubmissionData;
+          setSubmission(submissionData);
           
           // Pastikan nilai submittedAt valid
-          const submissionData = response.data as any;
           if (submissionData.submittedAt) {
             try {
               const submittedDate = new Date(submissionData.submittedAt);
@@ -65,7 +118,7 @@ export default function GradingForm({ submissionId }: { submissionId: string }) 
           const initialGrades: Record<string, boolean> = {};
           const initialFeedbacks: Record<string, string> = {};
           
-          response.data.answers.forEach((answer: any) => {
+          submissionData.answers.forEach((answer) => {
             initialGrades[answer.id] = false; // Default: jawaban tidak benar
             initialFeedbacks[answer.id] = ""; // Default: tidak ada feedback
           });
@@ -79,10 +132,11 @@ export default function GradingForm({ submissionId }: { submissionId: string }) 
             if (progressResponse.ok) {
               const progressData = await progressResponse.json();
               if (progressData.success && progressData.data) {
-                setInitialOverride(progressData.data.overrideSystemFlow || false);
-                setInitialLevel(progressData.data.manuallyAssignedLevel || null);
-                setStudentProgress(progressData.data);
-                console.log("Loaded progress data:", progressData.data);
+                const progress = progressData.data as StudentProgress;
+                setInitialOverride(progress.overrideSystemFlow || false);
+                setInitialLevel(progress.manuallyAssignedLevel || null);
+                setStudentProgress(progress);
+                console.log("Loaded progress data:", progress);
               }
             }
           } catch (err) {
@@ -208,7 +262,7 @@ export default function GradingForm({ submissionId }: { submissionId: string }) 
         );
         
         // Update state progress siswa
-        setStudentProgress((prev: any) => prev ? {
+        setStudentProgress((prev: StudentProgress | null) => prev ? {
           ...prev,
           lastAttemptPassed: isPassed,
           finalStatus: isPassed === true 
@@ -473,7 +527,7 @@ export default function GradingForm({ submissionId }: { submissionId: string }) 
         )}
         
         <div className="space-y-6">
-          {submission.answers.map((answer: any, index: number) => (
+          {submission.answers.map((answer: AnswerData, index: number) => (
             <Card key={answer.id}>
               <CardHeader>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">

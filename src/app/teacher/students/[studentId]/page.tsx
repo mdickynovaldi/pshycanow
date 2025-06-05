@@ -5,20 +5,61 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Loader2, AlertCircle, BookOpen, Clock, CheckCircle, 
-  XCircle, User, ChevronLeft,  RotateCcw 
+  XCircle, User, ChevronLeft,  RotateCcw, 
 } from "lucide-react";
 import { 
   getStudentDetails, 
   getStudentQuizSubmissions, 
-  getStudentFailedQuizzes 
+  getStudentFailedQuizzes,
+
+
 } from "@/lib/actions/student-actions";
 import { resetStudentQuizAttempts } from "@/lib/actions/teacher-actions";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
+
+
+interface StudentData {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image?: string | null;
+  joinedAt?: string | Date;
+  class?: {
+    name: string;
+  };
+  classes?: Array<{
+    id: string;
+    name: string;
+  }>;
+  completedQuizzes?: number;
+  totalSubmissions?: number;
+  averageScore?: number;
+}
+
+interface SubmissionData {
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  className: string;
+  score: number;
+  passed: boolean;
+  attemptNumber: number;
+  submittedAt: string | Date;
+}
+
+interface FailedQuizData {
+  quizId: string;
+  quizTitle: string;
+  className: string;
+  lastScore: number;
+  lastAttemptDate: string | Date;
+}
 
 export default function StudentDetailPage() {
   const params = useParams();
@@ -26,9 +67,9 @@ export default function StudentDetailPage() {
   const studentId = params.studentId as string;
   
   const [loading, setLoading] = useState(true);
-  const [student, setStudent] = useState<any>(null);
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [failedQuizzes, setFailedQuizzes] = useState<any[]>([]);
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [submissions, setSubmissions] = useState<SubmissionData[]>([]);
+  const [failedQuizzes, setFailedQuizzes] = useState<FailedQuizData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
   
@@ -45,20 +86,20 @@ export default function StudentDetailPage() {
           return;
         }
         
-        setStudent(studentResult.data);
+        setStudentData(studentResult.data as StudentData);
         
         // Dapatkan submisi kuis siswa
         const submissionsResult = await getStudentQuizSubmissions(studentId);
         
         if (submissionsResult.success) {
-          setSubmissions(submissionsResult.data || []);
+          setSubmissions((submissionsResult.data || []) as SubmissionData[]);
         }
         
         // Dapatkan kuis yang gagal
         const failedResult = await getStudentFailedQuizzes(studentId);
         
         if (failedResult.success) {
-          setFailedQuizzes(failedResult.data || []);
+          setFailedQuizzes((failedResult.data || []) as FailedQuizData[]);
         }
         
         setLoading(false);
@@ -87,7 +128,7 @@ export default function StudentDetailPage() {
         // Refresh data
         const failedResult = await getStudentFailedQuizzes(studentId);
         if (failedResult.success) {
-          setFailedQuizzes(failedResult.data || []);
+          setFailedQuizzes((failedResult.data || []) as FailedQuizData[]);
         }
       } else {
         toast.error(result.message || "Gagal mereset percobaan kuis");
@@ -112,7 +153,7 @@ export default function StudentDetailPage() {
   }
   
   // Render error state
-  if (error || !student) {
+  if (error || !studentData) {
     return (
       <div className="container py-8">
         <Button 
@@ -132,7 +173,7 @@ export default function StudentDetailPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="container py-8">
       <Button 
@@ -154,8 +195,8 @@ export default function StudentDetailPage() {
                   <User className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>{student.name}</CardTitle>
-                  <CardDescription>{student.email}</CardDescription>
+                  <CardTitle>{studentData.name || "Nama tidak tersedia"}</CardTitle>
+                  <CardDescription>{studentData.email || "Email tidak tersedia"}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -163,23 +204,26 @@ export default function StudentDetailPage() {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Kelas</p>
-                  <p className="font-medium">{student.classes.length} kelas</p>
+                  <p className="font-medium">{studentData.classes?.length || 0} kelas</p>
                 </div>
                 
                 <div>
                   <p className="text-sm text-muted-foreground">Kuis Diselesaikan</p>
-                  <p className="font-medium">{student.completedQuizzes} kuis</p>
+                  <p className="font-medium">{studentData.completedQuizzes || 0} kuis</p>
                 </div>
                 
                 <div>
                   <p className="text-sm text-muted-foreground">Rata-rata Skor</p>
-                  <p className="font-medium">{student.averageScore}%</p>
+                  <p className="font-medium">{studentData.averageScore || 0}%</p>
                 </div>
                 
                 <div>
                   <p className="text-sm text-muted-foreground">Bergabung Sejak</p>
                   <p className="font-medium">
-                    {formatDistanceToNow(new Date(student.joinedAt), { addSuffix: true, locale: id })}
+                    {studentData.joinedAt 
+                      ? formatDistanceToNow(new Date(studentData.joinedAt), { addSuffix: true, locale: id })
+                      : "Tidak diketahui"
+                    }
                   </p>
                 </div>
               </div>

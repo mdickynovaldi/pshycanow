@@ -4,8 +4,13 @@ import { authOptions, UserRole } from "@/lib/auth";
 import { getStudentById } from "@/lib/actions/student-actions";
 import StudentForm from "@/components/teacher/StudentForm";
 
+interface PageProps {
+  params: Promise<{ studentId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
 // Halaman edit siswa untuk guru
-export default async function EditStudentPage({ params }: any) {
+export default async function EditStudentPage({ params }: PageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -17,7 +22,8 @@ export default async function EditStudentPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const studentId = params.studentId;
+  // Await params untuk mendapatkan studentId
+  const { studentId } = await params;
   
   // Ambil detail siswa
   const { success, data: student, message } = await getStudentById(studentId);

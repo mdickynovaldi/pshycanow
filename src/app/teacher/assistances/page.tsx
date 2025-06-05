@@ -11,11 +11,26 @@ import { Loader2, AlertCircle, CheckCircle, User, Calendar, ChevronRight } from 
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
+// Interface definitions
+interface Submission {
+  id: string;
+  createdAt: string | Date;
+  student: {
+    name: string | null;
+  };
+  assistance: {
+    title: string;
+    quiz: {
+      title: string;
+    };
+  };
+}
+
 export default function TeacherAssistancesPage() {
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   // Muat daftar submisi yang menunggu penilaian
@@ -31,7 +46,7 @@ export default function TeacherAssistancesPage() {
           return;
         }
         
-        setSubmissions(result.data || []);
+        setSubmissions((result.data || []) as Submission[]);
         setLoading(false);
       } catch (err) {
         console.error(err);

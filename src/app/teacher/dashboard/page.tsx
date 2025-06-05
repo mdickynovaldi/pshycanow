@@ -8,14 +8,51 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { getTeacherDashboardStats, getAllFailedStudents } from "@/lib/actions/teacher-dashboard-actions";
-import { Loader2, AlertCircle, BookOpen, Users, School, X, BarChart, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, AlertCircle, Users, School, BarChart, Clock, CheckCircle, XCircle } from "lucide-react";
+
+// Tambahkan interface untuk tipe data
+interface DashboardStats {
+  totalClasses: number;
+  activeClasses: number;
+  totalQuizzes: number;
+  pendingSubmissions: number;
+  totalStudents: number;
+  activeStudents: number;
+  popularClasses?: Array<{
+    id: string;
+    name: string;
+    studentCount: number;
+  }>;
+  recentQuizzes?: Array<{
+    id: string;
+    title: string;
+    className: string | undefined;
+    createdAt: Date;
+  }>;
+}
+
+interface FailedStudent {
+  studentId: string;
+  studentName: string | null;
+  email: string | null;
+  quizId: string;
+  quizTitle: string;
+  className: string | undefined;
+  currentAttempt: number;
+  lastAttemptPassed: boolean | null;
+  lastScore: number;
+  finalStatus: string | null;
+  level1Completed: boolean;
+  level2Completed: boolean;
+  level3Completed: boolean;
+}
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-  const [allFailedStudents, setAllFailedStudents] = useState<any[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [allFailedStudents, setAllFailedStudents] = useState<FailedStudent[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   // Muat data dashboard
@@ -32,7 +69,7 @@ export default function TeacherDashboardPage() {
           return;
         }
         
-        setStats(statsResult.data);
+        setStats(statsResult.data || null);
         
         // Dapatkan semua siswa yang tidak lulus
         const failedResult = await getAllFailedStudents();
@@ -53,7 +90,7 @@ export default function TeacherDashboardPage() {
   }, []);
   
   // Fungsi untuk menentukan status siswa
-  const getStudentStatus = (student: any) => {
+  const getStudentStatus = (student: FailedStudent) => {
     if (student.currentAttempt >= 4 && !student.lastAttemptPassed) {
       return {
         type: "critical",
@@ -385,7 +422,7 @@ export default function TeacherDashboardPage() {
                 <div>
                   <h3 className="font-medium mb-2">Kelas Terpopuler</h3>
                   <div className="space-y-3">
-                    {stats?.popularClasses?.map((classItem: any) => (
+                    {stats?.popularClasses?.map((classItem) => (
                       <div key={classItem.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <div className="flex items-center">
                           <School className="h-5 w-5 text-primary mr-2" />
@@ -405,7 +442,7 @@ export default function TeacherDashboardPage() {
                 <div>
                   <h3 className="font-medium mb-2">Kuis Terbaru</h3>
                   <div className="space-y-3">
-                    {stats?.recentQuizzes?.map((quiz: any) => (
+                    {stats?.recentQuizzes?.map((quiz) => (
                       <div key={quiz.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <div>
                           <div className="font-medium">{quiz.title}</div>

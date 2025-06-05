@@ -6,11 +6,12 @@ import React from "react";
 import { MainQuizButton, AssistanceStatusIndicator } from "@/components/MainQuizButton";
 import { useAssistanceStatus } from "@/hooks/useAssistanceStatus";
 import { Button } from "@/components/ui/button";
+import { Quiz } from "@/types";
 
 
 interface ExampleStudentQuizPageProps {
   quizId: string;
-  quizData: any; // Sesuaikan dengan tipe data quiz Anda
+  quizData: Quiz; // Menggunakan interface Quiz dari types
   onStartQuiz: () => void;
   isStartingQuiz: boolean;
 }

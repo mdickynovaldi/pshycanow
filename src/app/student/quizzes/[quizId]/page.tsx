@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Loader2, AlertCircle, CheckCircle, XCircle, FileText, 
   BookOpen, ChevronRight, X, RotateCcw,
-  ChevronLeft, AlertTriangle, Target 
+  ChevronLeft, AlertTriangle, Target
 } from "lucide-react";
 import { getStudentQuizStatus, incrementQuizAttempt } from "@/lib/actions/quiz-progress-actions";
 import { getQuizById } from "@/lib/actions/quiz-actions";
@@ -18,7 +18,6 @@ import { toast } from "sonner";
 
 import { SubmissionStatus, AssistanceRequirement, Question } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
-// import QuizSubmissionDetails from "./QuizSubmissionDetails";
 import { MainQuizButton, AssistanceStatusIndicator } from "@/components/MainQuizButton";
 import { useAssistanceStatus } from "@/hooks/useAssistanceStatus";
 
@@ -190,11 +189,11 @@ export default function StudentQuizPage() {
         const fetchedQuiz = quizResult.data; // Ini adalah tipe Quiz
 
         // Untuk properti yang TIDAK ada di tipe Quiz standar, tapi mungkin dikirim backend
-        // Kita perlu mengaksesnya menggunakan type assertion ke any untuk properti spesifik ini.
-        const maxAttemptsFromBackend = (fetchedQuiz as any).maxAttempts;
-        const passingScoreFromBackend = (fetchedQuiz as any).passingScore;
-        const quizImageUrlFromBackend = (fetchedQuiz as any).imageUrl;
-        const courseFromBackend = (fetchedQuiz as any).course;
+        // Kita perlu mengaksesnya menggunakan type assertion untuk properti spesifik ini.
+        const maxAttemptsFromBackend = (fetchedQuiz as unknown as { maxAttempts?: number }).maxAttempts;
+        const passingScoreFromBackend = (fetchedQuiz as unknown as { passingScore?: number }).passingScore;
+        const quizImageUrlFromBackend = (fetchedQuiz as unknown as { imageUrl?: string | null }).imageUrl;
+        const courseFromBackend = (fetchedQuiz as unknown as { course?: { title: string } | null }).course;
 
         setQuizData({
           id: fetchedQuiz.id,

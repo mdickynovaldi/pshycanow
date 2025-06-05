@@ -200,8 +200,8 @@ export interface StudentQuizProgress {
   student?: Student;
 }
 
-export interface APIResponse {
+export interface APIResponse<T = unknown> {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: T;
 } 

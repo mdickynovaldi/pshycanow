@@ -36,38 +36,55 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+interface AssistanceLevel {
+  id: string;
+  status: string;
+  answers: number;
+  submittedAt: Date;
+}
+
+interface Level3Data {
+  completed: boolean;
+}
+
+interface StudentProgress {
+  currentAttempt: number;
+  lastAttemptPassed: boolean | null;
+  assistanceRequired: string;
+  overrideSystemFlow: boolean;
+  manuallyAssignedLevel: string | null;
+  level1Completed?: boolean;
+  level2Completed?: boolean;
+  level3Completed?: boolean;
+  failedAttempts?: number;
+  latestSubmissionStatus?: string;
+  level1?: AssistanceLevel | null;
+  level2?: AssistanceLevel | null;
+  level3?: Level3Data | null;
+  level3AccessGranted?: boolean;
+  finalStatus?: string;
+}
+
 interface Student {
   id: string;
   name: string;
   email: string;
-  progress?: {
-    currentAttempt: number;
-    lastAttemptPassed: boolean | null;
-    assistanceRequired: string;
-    overrideSystemFlow: boolean;
-    manuallyAssignedLevel: string | null;
-    level1Completed?: boolean;
-    level2Completed?: boolean;
-    level3Completed?: boolean;
-    failedAttempts?: number;
-    latestSubmissionStatus?: string;
-    level1?: {
-      id: string;
-      status: string;
-      answers: number;
-      submittedAt: Date;
-    } | null;
-    level2?: {
-      id: string;
-      status: string;
-      answers: number;
-      submittedAt: Date;
-    } | null;
-    level3?: {
-      completed: boolean;
-    } | null;
-    level3AccessGranted?: boolean;
-  };
+  progress?: StudentProgress;
+}
+
+interface QuestionData {
+  id: string;
+  question: string;
+}
+
+interface SubmissionAnswer {
+  id: string;
+  answerText: string;
+  question?: QuestionData;
+}
+
+interface Level2AnswersData {
+  answers: SubmissionAnswer[];
 }
 
 export default function StudentControl({ quizId }: { quizId: string }) {
@@ -80,7 +97,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
   const [saving, setSaving] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedL2Answers, setSelectedL2Answers] = useState<any>(null);
+  const [selectedL2Answers, setSelectedL2Answers] = useState<Level2AnswersData | null>(null);
   const [loadingL2Answers, setLoadingL2Answers] = useState(false);
   const router = useRouter();
 
@@ -140,9 +157,10 @@ export default function StudentControl({ quizId }: { quizId: string }) {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
+            const progressData = data.data as StudentProgress;
             // Update progress siswa yang dipilih
-            setOverrideSystem((data.data as any).overrideSystemFlow || false);
-            setAssistanceLevel((data.data as any).manuallyAssignedLevel || "NONE");
+            setOverrideSystem(progressData.overrideSystemFlow || false);
+            setAssistanceLevel(progressData.manuallyAssignedLevel || "NONE");
             
             // Update data siswa di state
             setStudents(prevStudents => 
@@ -151,11 +169,11 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                   ? { 
                       ...s, 
                       progress: {
-                        currentAttempt: data.data.currentAttempt,
-                        lastAttemptPassed: data.data.lastAttemptPassed,
-                        assistanceRequired: data.data.assistanceRequired,
-                        overrideSystemFlow: (data.data as any).overrideSystemFlow || false,
-                        manuallyAssignedLevel: (data.data as any).manuallyAssignedLevel || "NONE"
+                        currentAttempt: progressData.currentAttempt,
+                        lastAttemptPassed: progressData.lastAttemptPassed,
+                        assistanceRequired: progressData.assistanceRequired,
+                        overrideSystemFlow: progressData.overrideSystemFlow || false,
+                        manuallyAssignedLevel: progressData.manuallyAssignedLevel || "NONE"
                       }
                     }
                   : s
@@ -207,7 +225,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                     overrideSystemFlow: overrideSystem,
                     manuallyAssignedLevel: overrideSystem ? assistanceLevel : null,
                     level3AccessGranted: overrideSystem && assistanceLevel === "ASSISTANCE_LEVEL3"
-                  } as any
+                  } as StudentProgress
                 }
               : student
           )
@@ -253,7 +271,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                     ...student.progress,
                     level3AccessGranted: granted,
                     assistanceRequired: granted ? "ASSISTANCE_LEVEL3" : student.progress?.assistanceRequired || "NONE"
-                  } as any
+                  } as StudentProgress
                 }
               : student
           )
@@ -266,7 +284,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
               ...prev.progress,
               level3AccessGranted: granted,
               assistanceRequired: granted ? "ASSISTANCE_LEVEL3" : prev.progress?.assistanceRequired || "NONE"
-            } as any
+            } as StudentProgress
           } : null);
         }
       } else {
@@ -318,7 +336,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                       : isPassed === false 
                         ? "failed" 
                         : "ongoing"
-                  } as any
+                  } as StudentProgress
                 }
               : student
           )
@@ -335,7 +353,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                 : isPassed === false 
                   ? "failed" 
                   : "ongoing"
-            } as any
+            } as StudentProgress
           } : null);
         }
       } else {
@@ -363,7 +381,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
   };
   
   // Tampilkan ikon status
-  const getStatusIcon = (progress: any) => {
+  const getStatusIcon = (progress: StudentProgress | undefined) => {
     if (!progress) return null;
     
     if (progress.lastAttemptPassed) {
@@ -387,7 +405,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setSelectedL2Answers(data.data);
+          setSelectedL2Answers(data.data as Level2AnswersData);
         } else {
           toast.error("Gagal memuat jawaban bantuan level 2");
         }
@@ -946,7 +964,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
               </div>
             ) : (
               <div className="space-y-4">
-                {selectedL2Answers.answers?.map((answer: any, index: number) => (
+                {selectedL2Answers.answers?.map((answer: SubmissionAnswer, index: number) => (
                   <div key={answer.id} className="border p-3 rounded-md">
                     <p className="font-medium text-sm">Pertanyaan {index + 1}:</p>
                     <p className="text-sm mb-2">{answer.question?.question || "Pertanyaan"}</p>

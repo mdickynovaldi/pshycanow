@@ -5,13 +5,13 @@ import { getClassDetail } from "@/lib/actions/class-actions";
 import EditClassForm from "@/components/teacher/EditClassForm";
 
 // Definisikan tipe untuk props halaman ini
-// type EditClassPageProps = {
-//   params: { classId: string };
-//   searchParams?: { [key: string]: string | string[] | undefined };
-// };
+type EditClassPageProps = {
+  params: Promise<{ classId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
 // Halaman edit kelas untuk guru
-export default async function EditClassPage({ params }: any) {
+export default async function EditClassPage({ params }: EditClassPageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -23,7 +23,8 @@ export default async function EditClassPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const classId = params.classId;
+  // Await params untuk mendapatkan classId
+  const { classId } = await params;
   
   // Ambil detail kelas
   const { success, data: classData, message } = await getClassDetail(classId);

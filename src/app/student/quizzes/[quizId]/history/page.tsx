@@ -84,8 +84,9 @@ export default function SubmissionHistoryPage() {
           console.log('📋 Number of direct submissions found:', directSubmissionsResult.data.length);
           
           // Log detail setiap submission
-          directSubmissionsResult.data.forEach((submission: any, index: number) => {
-            console.log(`  ${index + 1}. ID: ${submission.id}, Attempt: ${submission.attemptNumber}, Status: ${submission.status}`);
+          directSubmissionsResult.data.forEach((submission: unknown, index: number) => {
+            const sub = submission as SubmissionData;
+            console.log(`  ${index + 1}. ID: ${sub.id}, Attempt: ${sub.attemptNumber}, Status: ${sub.status}`);
           });
           
           // Pastikan data terurut berdasarkan attemptNumber (descending)
@@ -101,8 +102,9 @@ export default function SubmissionHistoryPage() {
           console.log('📋 Number of submissions found:', submissionResult.data.length);
           
           // Log detail setiap submission
-          submissionResult.data.forEach((submission: any, index: number) => {
-            console.log(`  ${index + 1}. ID: ${submission.id}, Attempt: ${submission.attemptNumber}, Status: ${submission.status}, assistanceLevel: ${submission.assistanceLevel}`);
+          submissionResult.data.forEach((submission: unknown, index: number) => {
+            const sub = submission as SubmissionData;
+            console.log(`  ${index + 1}. ID: ${sub.id}, Attempt: ${sub.attemptNumber}, Status: ${sub.status}, assistanceLevel: ${sub.assistanceLevel}`);
           });
           
           // Pastikan data terurut berdasarkan attemptNumber (descending)

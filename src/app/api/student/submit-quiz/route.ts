@@ -556,8 +556,8 @@ export async function PATCH(request: Request) {
     
     // Siapkan data untuk update berdasarkan level bantuan yang diselesaikan
     const updateData: {
-        finalStatus?: any; // Menggunakan SubmissionStatus enum atau null
-        assistanceRequired?: any; // Menggunakan enum AssistanceRequirement
+        finalStatus?: 'PASSED' | 'FAILED' | null; // Changed from any to specific types
+        assistanceRequired?: 'NONE' | 'ASSISTANCE_LEVEL1' | 'ASSISTANCE_LEVEL2' | 'ASSISTANCE_LEVEL3'; // Changed from any to specific types
         level1Completed?: boolean;
         level2Completed?: boolean;
         level3Completed?: boolean;

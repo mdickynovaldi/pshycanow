@@ -56,8 +56,8 @@ export default function QuizSubmissionDetails({ quizId }: { quizId: string }) {
   const [loading, setLoading] = useState(true);
   const [quizStatus, setQuizStatus] = useState<QuizStatusData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [lastSubmission, setLastSubmission] = useState<any>(null);
-  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+  const [lastSubmission, setLastSubmission] = useState<{ id: string; answers?: Array<{ isCorrect: boolean }> } | null>(null);
+  const [allSubmissions, setAllSubmissions] = useState<Array<{ id: string; status: string; score?: number; correctAnswers?: number; totalQuestions?: number; answers?: Array<{ isCorrect: boolean }> }>>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -274,19 +274,8 @@ export default function QuizSubmissionDetails({ quizId }: { quizId: string }) {
       // const submissionStatus = latestSubmission.status;
       // const score = latestSubmission.score || 0;
       
-      // Hitung jawaban benar untuk submisi terbaru
-      let correctAnswers = 0;
-      let totalQuestions = 0;
-      
-      // Jika submisi terbaru memiliki jawaban, hitung jumlah jawaban benar
-      if (latestSubmission.answers && Array.isArray(latestSubmission.answers)) {
-        totalQuestions = latestSubmission.answers.length;
-        correctAnswers = latestSubmission.answers.filter((answer: any) => answer.isCorrect).length;
-      } else {
-        // Fallback ke nilai yang sudah dihitung jika ada
-        correctAnswers = latestSubmission.correctAnswers || 0;
-        totalQuestions = latestSubmission.totalQuestions || 0;
-      }
+      // TODO: Implementation for showing allSubmissions details can be added here
+      console.log('Latest submission available:', latestSubmission.id);
     }
     // Fallback ke lastMainQuizSubmission dari quizStatus jika tidak ada allSubmissions
     else if (quizStatus?.lastMainQuizSubmission?.status === 'PENDING' || 
@@ -303,7 +292,7 @@ export default function QuizSubmissionDetails({ quizId }: { quizId: string }) {
       // Jika lastSubmission tersedia, hitung jumlah jawaban benar/salah
       if (lastSubmission && lastSubmission.answers && Array.isArray(lastSubmission.answers)) {
         totalQuestions = lastSubmission.answers.length;
-        correctAnswers = lastSubmission.answers.filter((answer: any) => answer.isCorrect).length;
+        correctAnswers = lastSubmission.answers.filter((answer: { isCorrect: boolean }) => answer.isCorrect).length;
       } else {
         // Fallback ke quizStatus jika lastSubmission tidak tersedia
         correctAnswers = quizStatus.lastMainQuizSubmission.correctAnswers || 0;

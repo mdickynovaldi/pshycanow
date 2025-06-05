@@ -11,21 +11,41 @@ import { getPendingSubmissionsWithRawSQL } from "@/lib/actions/quiz-submission-a
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
+// Interface definition
+interface Submission {
+  id: string;
+  status: string;
+  score?: number | null;
+  createdAt: string | Date;
+  attemptNumber: number;
+  student: {
+    name: string | null;
+    email?: string;
+    image?: string;
+  };
+  quiz: {
+    title: string;
+    class?: {
+      name: string;
+    };
+  };
+}
+
 export default function TeacherSubmissionsPage() {
   const router = useRouter();
   
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const loadSubmissions = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       
       const response = await getPendingSubmissionsWithRawSQL();
       
       if (response.success) {
-        setSubmissions(response.data || []);
+        setSubmissions((response.data || []) as Submission[]);
       } else {
         setError(response.message || "Gagal memuat submisi");
       }
@@ -33,7 +53,7 @@ export default function TeacherSubmissionsPage() {
       console.error("Error loading submissions:", err);
       setError("Terjadi kesalahan saat memuat submisi");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
   
@@ -52,7 +72,7 @@ export default function TeacherSubmissionsPage() {
       : "?";
   };
   
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="container flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

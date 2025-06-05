@@ -6,8 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
 
+interface PageProps {
+  params: Promise<{ quizId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
 // Halaman detail kuis untuk guru
-export default async function QuizDetailPage({ params }: any) {
+export default async function QuizDetailPage({ params }: PageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -19,7 +24,8 @@ export default async function QuizDetailPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const quizId = params.quizId;
+  // Await params untuk mendapatkan quizId
+  const { quizId } = await params;
   
   // Ambil detail kuis
   const { success, data: quiz, message } = await getQuizById(quizId);

@@ -10,6 +10,15 @@ import {
 } from "../../types";
 import { Prisma } from '@prisma/client';
 
+// Definisi interface untuk session user
+interface ExtendedUser {
+  id: string;
+  role: UserRole;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+}
+
 // Helper untuk memeriksa akses
 async function checkAccess() {
   const session = await getServerSession(authOptions);
@@ -18,10 +27,9 @@ async function checkAccess() {
     return { success: false, message: "Anda harus login terlebih dahulu" };
   }
   
-  // Type assertion karena NextAuth session.user seharusnya memiliki id dan role yang ditambahkan
-  // di callback pada auth.ts
-  const userId = (session.user as any).id;
-  const userRole = (session.user as any).role;
+  // Type assertion dengan interface yang tepat
+  const userId = (session.user as ExtendedUser).id;
+  const userRole = (session.user as ExtendedUser).role;
   
   return { success: true, userId, role: userRole };
 }
@@ -485,8 +493,8 @@ export async function submitAssistanceLevel1(
         assistanceLevel: 1,
         status: allCorrect ? SubmissionStatus.PASSED : SubmissionStatus.FAILED,
         score: score,
-        // Pastikan userAnswers adalah JSON-serializable. Prisma akan menanganinya jika tipe field adalah Json.
-        submittedAnswers: userAnswers as any, // Casting ke 'any' jika Prisma mengeluh, atau pastikan tipe cocok
+        // Simpan jawaban dalam format JSON
+        submittedAnswers: userAnswers,
         attemptNumber: 1
       },
     });
@@ -530,7 +538,7 @@ export async function submitAssistanceLevel1(
   } catch (error) {
     console.error("Error submitting assistance level 1:", error);
     let message = "Terjadi kesalahan saat mengirimkan Bantuan Level 1.";
-    if (error instanceof Error && (error as any).code === 'P2002') { // Unique constraint violation
+    if (error instanceof Error && (error as { code?: string }).code === 'P2002') { // Unique constraint violation
         message = "Submisi untuk bantuan ini sudah ada atau terjadi duplikasi data."
     } else if (error instanceof Error) {
         message = error.message;
@@ -605,8 +613,8 @@ export async function submitAssistanceLevel2(
         status: SubmissionStatus.PASSED, // Dianggap lulus dari perspektif alur siswa
         attemptNumber: 1, // Percobaan pertama untuk bantuan ini
         score: null, // Tidak ada skor otomatis untuk esai
-        // Simpan referensi ke submisi spesifik L2 jika perlu, atau cukup simpan jawaban ringkas
-        submittedAnswers: userEssayAnswers.map(a => ({ q: a.questionId, a: a.answerText.substring(0, 100) })) as any,
+        // Simpan referensi ke submisi spesifik L2 dengan format ringkas
+        submittedAnswers: userEssayAnswers.map(a => ({ questionId: a.questionId, answerText: a.answerText.substring(0, 100) })),
       },
     });
 
@@ -642,7 +650,7 @@ export async function submitAssistanceLevel2(
         message = error.message;
     }
     // Handle P2003 (Foreign key constraint failed) jika questionId di userEssayAnswers tidak valid
-    if (error instanceof Error && (error as any).code === 'P2003') {
+    if (error instanceof Error && (error as { code?: string }).code === 'P2003') {
         message = "Salah satu ID pertanyaan esai tidak valid. Gagal menyimpan jawaban."
     }
     return { success: false, message };
@@ -706,7 +714,7 @@ export async function accessAssistanceLevel3(
         status: SubmissionStatus.PASSED, // Dianggap lulus/selesai dari perspektif alur siswa
         attemptNumber: 1, // Percobaan pertama/satu-satunya untuk bantuan ini
         score: null, // Tidak ada skor
-        submittedAnswers: [{ message: "Bantuan Level 3 telah diakses." }] as any,
+        submittedAnswers: [{ message: "Bantuan Level 3 telah diakses." }],
       },
     });
 

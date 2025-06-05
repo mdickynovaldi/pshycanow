@@ -7,7 +7,12 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import EnrollStudentsButton from "@/components/teacher/EnrollStudentsButton";
 
-export default async function EnrollStudentsPage({ params }: any) {
+interface PageProps {
+  params: Promise<{ classId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function EnrollStudentsPage({ params }: PageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -19,7 +24,8 @@ export default async function EnrollStudentsPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const classId = params.classId;
+  // Await params untuk mendapatkan classId
+  const { classId } = await params;
   
   // Ambil detail kelas
   const { success: classSuccess, data: classData } = await getClassDetail(classId);

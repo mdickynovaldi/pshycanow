@@ -6,8 +6,13 @@ import { prisma } from "@/lib/prisma";
 import QuizForm from "@/components/teacher/QuizForm";
 import { Quiz, QuizAssistanceLevel1, QuizAssistanceLevel2, QuizAssistanceLevel3 } from "@/types";
 
+interface PageProps {
+  params: Promise<{ quizId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
 // Halaman edit kuis untuk guru
-export default async function EditQuizPage({ params }: any) {
+export default async function EditQuizPage({ params }: PageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -19,7 +24,8 @@ export default async function EditQuizPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const quizId = params.quizId;
+  // Await params untuk mendapatkan quizId
+  const { quizId } = await params;
   
   // Ambil detail kuis
   const { success, data: quizData, message } = await getQuizById(quizId);

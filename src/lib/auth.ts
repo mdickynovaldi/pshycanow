@@ -1,4 +1,3 @@
-
 import { prisma } from "./prisma";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -9,6 +8,16 @@ import { z } from "zod";
 export enum UserRole {
   TEACHER = "TEACHER",
   STUDENT = "STUDENT"
+}
+
+// Interface untuk user dengan field tambahan
+interface UserWithPassword {
+  id: string;
+  email: string | null;
+  name: string | null;
+  image: string | null;
+  password: string;
+  role: UserRole;
 }
 
 // Validasi secret hanya di sisi server
@@ -49,23 +58,21 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Karena kita menambahkan field password secara manual,
-        // TypeScript tidak mengenalinya secara otomatis.
-        // Kita perlu mengakses sebagai properti dinamis.
-        const userPassword = (user as any).password;
+        // Type assertion dengan interface yang tepat
+        const userWithPassword = user as UserWithPassword;
         
-        if (!userPassword) {
+        if (!userWithPassword.password) {
           return null;
         }
 
-        const passwordMatch = await compare(result.data.password, userPassword);
+        const passwordMatch = await compare(result.data.password, userWithPassword.password);
         
         if (!passwordMatch) {
           return null;
         }
 
         // Ambil role dari user
-        const userRole = (user as any).role as UserRole;
+        const userRole = userWithPassword.role;
 
         return {
           id: user.id,

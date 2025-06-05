@@ -23,8 +23,29 @@ import { getStudentAvailableQuizzes } from "@/lib/actions/quiz-submission-action
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
+// Interface definitions
+interface AttemptInfo {
+  attemptCount: number;
+  hasPassed: boolean;
+  hasPendingAttempt: boolean;
+  bestScore?: number | null;
+  lastAttempt?: {
+    score?: number | null;
+    createdAt: string | Date;
+  } | null;
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  class?: {
+    name: string;
+  } | null;
+  attemptInfo: AttemptInfo;
+}
+
 export default function StudentQuizzesPage() {
-  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -35,7 +56,7 @@ export default function StudentQuizzesPage() {
       const response = await getStudentAvailableQuizzes();
       
       if (response.success) {
-        setQuizzes(response.data || []);
+        setQuizzes((response.data || []) as Quiz[]);
       } else {
         setError(response.message || "Gagal memuat daftar kuis");
       }
@@ -51,7 +72,7 @@ export default function StudentQuizzesPage() {
     loadQuizzes();
   }, []);
   
-  const getQuizStatusIndicator = (quiz: any) => {
+  const getQuizStatusIndicator = (quiz: Quiz) => {
     const { attemptInfo } = quiz;
     
     // Prioritas tertinggi: Jika sudah lulus (PASSED)

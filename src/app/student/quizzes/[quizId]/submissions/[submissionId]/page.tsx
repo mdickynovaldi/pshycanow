@@ -12,6 +12,37 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { SubmissionStatus } from "@/types";
 
+// Interface definitions
+interface Question {
+  id: string;
+  text: string;
+  correctAnswer?: string | null;
+}
+
+interface Answer {
+  id: string;
+  answerText: string;
+  isCorrect: boolean | null;
+  feedback?: string | null;
+  question: Question;
+}
+
+interface Submission {
+  id: string;
+  status: SubmissionStatus;
+  score?: number | null;
+  correctAnswers?: number;
+  totalQuestions?: number;
+  attemptNumber: number;
+  createdAt: string | Date;
+  feedback?: string | null;
+  quiz: {
+    title?: string;
+    description?: string;
+  };
+  answers: Answer[];
+}
+
 export default function SubmissionDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -19,7 +50,7 @@ export default function SubmissionDetailPage() {
   const quizId = params.quizId as string;
   
   const [loading, setLoading] = useState(true);
-  const [submission, setSubmission] = useState<any>(null);
+  const [submission, setSubmission] = useState<Submission | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
@@ -34,7 +65,7 @@ export default function SubmissionDetailPage() {
           return;
         }
         
-        setSubmission(result.data);
+        setSubmission(result.data as Submission);
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -183,7 +214,7 @@ export default function SubmissionDetailPage() {
                   <p className="text-muted-foreground">Tidak ada data jawaban</p>
                 </div>
               ) : (
-                answers.map((answer: any, index: number) => {
+                answers.map((answer: Answer, index: number) => {
                   const question = answer.question || {};
                   return (
                     <div key={answer.id} className="border rounded-lg overflow-hidden">

@@ -1,8 +1,8 @@
 "use server";
 
 import { getServerSession } from "next-auth";
-import { authOptions, UserRole } from "../../lib/auth";
-import { prisma } from "../../lib/prisma";
+import { authOptions, UserRole } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { hash } from "bcryptjs";
 import { 
@@ -10,7 +10,16 @@ import {
   UpdateStudentInput,
   createStudentSchema,
   updateStudentSchema
-} from "../../lib/validations/student";
+} from "@/lib/validations/student";
+
+// Interface untuk session user dengan field tambahan
+interface ExtendedUser {
+  id: string;
+  role: UserRole;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+}
 
 // Helper untuk memeriksa apakah pengguna adalah guru
 async function checkTeacherAccess() {
@@ -20,14 +29,14 @@ async function checkTeacherAccess() {
     return { success: false, message: "Anda harus login terlebih dahulu" };
   }
   
-  // Type assertion untuk properti custom
-  const userRole = (session.user as any).role;
+  // Type assertion untuk properti custom dengan interface yang tepat
+  const userRole = (session.user as ExtendedUser).role;
   
   if (userRole !== UserRole.TEACHER) {
     return { success: false, message: "Anda tidak memiliki akses untuk fitur ini" };
   }
   
-  return { success: true, userId: (session.user as any).id };
+  return { success: true, userId: (session.user as ExtendedUser).id };
 }
 
 // 1. Mendapatkan semua siswa
@@ -209,8 +218,8 @@ export async function updateStudent(id: string, data: UpdateStudentInput) {
       }
     }
     
-    // Persiapkan data update
-    const updateData: any = {
+    // Persiapkan data update dengan interface yang tepat
+    const updateData: { name: string; email: string; password?: string } = {
       name: data.name,
       email: data.email
     };
@@ -515,9 +524,9 @@ export async function getStudentCourses() {
     return { success: false, message: "Anda harus login untuk melihat kursus" };
   }
   
-  // Type assertion untuk properti custom di session
-  const userRole = (session.user as any).role;
-  const userId = (session.user as any).id;
+  // Type assertion untuk properti custom di session dengan interface yang tepat
+  const userRole = (session.user as ExtendedUser).role;
+  const userId = (session.user as ExtendedUser).id;
   
   if (userRole !== UserRole.STUDENT) {
     return { success: false, message: "Anda tidak memiliki akses untuk fitur ini" };

@@ -390,12 +390,10 @@ export async function POST(request: Request) {
     } catch (dbError: unknown) {
       console.error("Database error:", dbError);
       // Tambahkan logging detail untuk membantu debugging
-      if (typeof dbError === 'object' && dbError !== null) {
-        const err = dbError as any;
-        if (err.code) console.error("Error code:", err.code);
-        if (err.meta) console.error("Error meta:", err.meta);
-        if (err.message) console.error("Error message:", err.message);
-      }
+      const err = dbError as { code?: string; meta?: unknown; message?: string };
+      if (err.code) console.error("Error code:", err.code);
+      if (err.meta) console.error("Error meta:", err.meta);
+      if (err.message) console.error("Error message:", err.message);
 
       // Jika masih terjadi error, coba dengan format query lama sebagai fallback
       try {

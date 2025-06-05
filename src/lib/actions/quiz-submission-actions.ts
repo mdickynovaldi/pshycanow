@@ -467,7 +467,7 @@ export async function submitQuizAnswers(formData: FormData) {
     });
     
     if (studentProgress) {
-      let newAssistanceRequired = AssistanceRequirement.NONE;
+      let newAssistanceRequired: AssistanceRequirement = AssistanceRequirement.NONE;
       let newNextStep = "TRY_MAIN_QUIZ_AGAIN";
       let newFinalStatus = null;
       
@@ -487,7 +487,7 @@ export async function submitQuizAnswers(formData: FormData) {
         if (nextFailedAttempts === 1) {
           // Kegagalan pertama -> cek bantuan level 1
           if (quiz.assistanceLevel1) {
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1;
             newNextStep = "COMPLETE_ASSISTANCE_LEVEL1";
           } else {
             newNextStep = "TAKE_MAIN_QUIZ_NOW";
@@ -495,32 +495,32 @@ export async function submitQuizAnswers(formData: FormData) {
         } else if (nextFailedAttempts === 2) {
           // Kegagalan kedua -> cek bantuan level 2
           if (quiz.assistanceLevel2) {
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL2 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL2;
             newNextStep = "COMPLETE_ASSISTANCE_LEVEL2";
           } else if (quiz.assistanceLevel1 && !studentProgress.level1Completed) {
             // Jika level 2 tidak tersedia tapi level 1 belum selesai, arahkan ke level 1
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1;
             newNextStep = "COMPLETE_ASSISTANCE_LEVEL1";
           }
         } else if (nextFailedAttempts === 3) {
           // Kegagalan ketiga -> cek bantuan level 3
           if (quiz.assistanceLevel3) {
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL3 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL3;
             newNextStep = "VIEW_ASSISTANCE_LEVEL3";
           } else if (quiz.assistanceLevel2 && !studentProgress.level2Completed) {
             // Jika level 3 tidak tersedia tapi level 2 belum selesai, arahkan ke level 2
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL2 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL2;
             newNextStep = "COMPLETE_ASSISTANCE_LEVEL2";
           } else if (quiz.assistanceLevel1 && !studentProgress.level1Completed) {
             // Jika level 2 & 3 tidak tersedia tapa level 1 belum selesai, arahkan ke level 1
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL1;
             newNextStep = "COMPLETE_ASSISTANCE_LEVEL1";
           }
         } else if (nextFailedAttempts >= 4) {
           // Kegagalan keempat -> siswa harus ke bantuan level 3 dulu (jika tersedia)
           // HANYA dinyatakan failed jika level 3 tidak tersedia atau sudah selesai
           if (quiz.assistanceLevel3 && !studentProgress.level3Completed) {
-            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL3 as any;
+            newAssistanceRequired = AssistanceRequirement.ASSISTANCE_LEVEL3;
             newNextStep = "VIEW_ASSISTANCE_LEVEL3";
             console.log("4th failed attempt: Directing to assistance level 3");
           } else {
@@ -677,8 +677,6 @@ export async function getStudentQuizStatus(quizId: string, studentId?: string) {
     const MAX_QUIZ_ATTEMPTS = 4;
     
     // Definisikan tipe untuk data progress yang akan digunakan
-    // Ini bisa lebih spesifik berdasarkan apa yang benar-benar ada di StudentQuizProgress
-    // dan apa yang dibutuhkan oleh logika di bawah.
     interface ProgressInternal {
       currentAttempt: number;
       lastAttemptPassed: boolean | null;
@@ -688,8 +686,6 @@ export async function getStudentQuizStatus(quizId: string, studentId?: string) {
       assistanceRequired: AssistanceRequirement | null;
       finalStatus: SubmissionStatus | null;
       failedAttempts: number;
-      // Tambahkan properti lain dari StudentQuizProgress yang diakses
-      level2Submitted?: boolean; // Jika ini memang tidak ada di skema, buat opsional
     }
 
     let progressData: ProgressInternal;
@@ -699,7 +695,6 @@ export async function getStudentQuizStatus(quizId: string, studentId?: string) {
         currentAttempt: 1,
         lastAttemptPassed: null,
         level1Completed: false,
-        level2Submitted: false, // Default jika progress baru
         level2Completed: false,
         level3Completed: false,
         assistanceRequired: null,
@@ -711,11 +706,10 @@ export async function getStudentQuizStatus(quizId: string, studentId?: string) {
         currentAttempt: studentProgressDb.currentAttempt,
         lastAttemptPassed: studentProgressDb.lastAttemptPassed,
         level1Completed: studentProgressDb.level1Completed,
-        level2Submitted: (studentProgressDb as any).level2Submitted || false, // Fallback jika tidak ada di skema DB
         level2Completed: studentProgressDb.level2Completed,
         level3Completed: studentProgressDb.level3Completed,
         assistanceRequired: studentProgressDb.assistanceRequired,
-        finalStatus: studentProgressDb.finalStatus as SubmissionStatus | null, // Cast jika perlu
+        finalStatus: studentProgressDb.finalStatus as SubmissionStatus | null,
         failedAttempts: studentProgressDb.failedAttempts || 0,
       };
     }
@@ -728,7 +722,7 @@ export async function getStudentQuizStatus(quizId: string, studentId?: string) {
       },
       level2: {
         required: progressData.assistanceRequired === AssistanceRequirement.ASSISTANCE_LEVEL2,
-        submitted: progressData.level2Submitted || false,
+        submitted: false,
         completed: progressData.level2Completed,
         available: await hasAssistanceLevel2(quizId),
       },

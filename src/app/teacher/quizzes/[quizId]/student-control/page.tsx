@@ -7,7 +7,12 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default async function StudentControlPage({ params }: any) {
+interface PageProps {
+  params: Promise<{ quizId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function StudentControlWrapper({ params }: PageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -19,7 +24,8 @@ export default async function StudentControlPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const quizId = params.quizId;
+  // Await params untuk mendapatkan quizId
+  const { quizId } = await params;
   
   // Ambil detail kuis
   const { success, data: quiz, message } = await getQuizById(quizId);

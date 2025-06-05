@@ -11,6 +11,20 @@ import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { toast } from "sonner";
 
+// Interface definitions
+interface Question {
+  id: string;
+  text: string;
+  imageUrl?: string | null;
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  description?: string | null;
+  questions: Question[];
+}
+
 export default function TakeQuizPage() {
   const params = useParams();
   const router = useRouter();
@@ -18,7 +32,7 @@ export default function TakeQuizPage() {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [quiz, setQuiz] = useState<any>(null);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   
@@ -31,11 +45,11 @@ export default function TakeQuizPage() {
         
         if (result.success && result.data) {
           console.log("Loaded quiz:", result.data);
-          setQuiz(result.data);
+          setQuiz(result.data as Quiz);
           
           // Initialize answers
           const initialAnswers: Record<string, string> = {};
-          result.data.questions.forEach((q: any) => {
+          (result.data as Quiz).questions.forEach((q: Question) => {
             initialAnswers[q.id] = "";
           });
           setAnswers(initialAnswers);
@@ -220,7 +234,7 @@ export default function TakeQuizPage() {
         </CardContent>
       </Card>
       
-      {quiz.questions.map((question: any, index: number) => (
+      {quiz.questions.map((question: Question, index: number) => (
         <Card key={question.id} className="mb-8">
           <CardHeader>
             <CardTitle>Pertanyaan {index + 1} dari {quiz.questions.length}</CardTitle>

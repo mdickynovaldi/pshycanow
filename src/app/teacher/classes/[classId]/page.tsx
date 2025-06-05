@@ -6,8 +6,13 @@ import Link from "next/link";
 import { ArrowLeftIcon, PencilIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import StudentList from "@/components/teacher/StudentList";
 
+interface PageProps {
+  params: Promise<{ classId: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
 // Halaman detail kelas untuk guru
-export default async function ClassDetailPage({ params }: any) {
+export default async function ClassDetailPage({ params }: PageProps) {
   // Cek autentikasi dan peran guru
   const session = await getServerSession(authOptions);
   
@@ -19,7 +24,8 @@ export default async function ClassDetailPage({ params }: any) {
     redirect("/dashboard");
   }
   
-  const classId = params.classId;
+  // Await params untuk mendapatkan classId
+  const { classId } = await params;
   
   // Ambil detail kelas beserta siswa yang terdaftar
   const { success, data: classData, message } = await getClassDetail(classId);

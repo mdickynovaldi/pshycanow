@@ -13,13 +13,42 @@ import { Loader2, AlertCircle, ChevronLeft, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
+// Interface definitions
+interface Answer {
+  id: string;
+  answerText: string;
+  question: {
+    text: string;
+    hint?: string;
+  };
+}
+
+interface Submission {
+  id: string;
+  createdAt: string | Date;
+  student: {
+    name: string;
+    email: string;
+    image?: string;
+  };
+  assistance: {
+    quiz: {
+      title: string;
+      class: {
+        name: string;
+      };
+    };
+  };
+  answers: Answer[];
+}
+
 export default function GradeAssistanceSubmissionPage() {
   const params = useParams();
   const router = useRouter();
   const submissionId = params.submissionId as string;
   
   const [loading, setLoading] = useState(true);
-  const [submission, setSubmission] = useState<any>(null);
+  const [submission, setSubmission] = useState<Submission | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
   const [passed, setPassed] = useState(false);
@@ -39,7 +68,7 @@ export default function GradeAssistanceSubmissionPage() {
           return;
         }
         
-        setSubmission(result.data);
+        setSubmission(result.data as unknown as Submission);
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -159,7 +188,7 @@ export default function GradeAssistanceSubmissionPage() {
           <div className="space-y-8 mb-8">
             <h3 className="text-lg font-medium">Jawaban Siswa</h3>
             
-            {answers.map((answer: any, index: number) => (
+            {answers.map((answer: Answer, index: number) => (
               <div key={answer.id} className="border rounded-lg overflow-hidden">
                 <div className="bg-muted p-4">
                   <h4 className="font-medium">Pertanyaan {index + 1}</h4>
