@@ -65,10 +65,27 @@ export async function getTeacherClasses() {
   
   const classes = await prisma.class.findMany({
     where: { teacherId: access.userId },
+    include: {
+      _count: {
+        select: {
+          enrollments: true,
+          quizzes: true,
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
+
+  // Transform data untuk mengganti nama field _count.enrollments menjadi _count.students
+  const transformedClasses = classes.map(classItem => ({
+    ...classItem,
+    _count: {
+      students: classItem._count.enrollments,
+      quizzes: classItem._count.quizzes,
+    },
+  }));
   
-  return { success: true, data: classes };
+  return { success: true, data: transformedClasses };
 }
 
 // 2. Mendapatkan detail kelas termasuk daftar siswa
