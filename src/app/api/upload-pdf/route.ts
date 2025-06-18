@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
 import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +17,18 @@ export async function POST(request: NextRequest) {
     // Ambil data form
     const formData = await request.formData();
     const file = formData.get("file") as File;
+    const quizId = formData.get("quizId") as string;
 
     if (!file) {
       return NextResponse.json(
         { success: false, message: "File tidak ditemukan" },
+        { status: 400 }
+      );
+    }
+
+    if (!quizId) {
+      return NextResponse.json(
+        { success: false, message: "Quiz ID diperlukan" },
         { status: 400 }
       );
     }
@@ -45,32 +50,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Buat nama file unik
-    const fileName = `${uuidv4()}.pdf`;
-    
-    // Path upload folder
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "pdf");
-    
-    // Buat direktori jika belum ada
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    const filePath = path.join(uploadDir, fileName);
-
     // Convert file ke buffer
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Tulis file ke disk
-    await writeFile(filePath, buffer);
+    // Simpan atau update data PDF di database
+    const existingAssistance = await prisma.quizAssistanceLevel3.findUnique({
+      where: { quizId }
+    });
 
-    // URL file yang bisa diakses
-    const pdfUrl = `/uploads/pdf/${fileName}`;
+    if (existingAssistance) {
+      // Update existing record
+      await prisma.quizAssistanceLevel3.update({
+        where: { id: existingAssistance.id },
+        data: {
+          pdfData: buffer,
+          pdfMimeType: file.type,
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // Create new record with minimal data
+      await prisma.quizAssistanceLevel3.create({
+        data: {
+          title: "Bantuan Level 3",
+          description: "Materi dalam format PDF untuk membantu siswa",
+          quizId,
+          pdfData: buffer,
+          pdfMimeType: file.type
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,
       message: "File berhasil diunggah",
-      pdfUrl
+      pdfId: quizId // Return quizId sebagai identifier
     });
   } catch (error) {
     console.error("Error uploading PDF:", error);

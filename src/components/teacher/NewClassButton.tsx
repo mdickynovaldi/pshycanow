@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { 
   PlusIcon, 
-  XMarkIcon, 
   AcademicCapIcon, 
   DocumentTextIcon,
   CheckCircleIcon,
@@ -13,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { createClass } from "@/lib/actions/class-actions";
 import { CreateClassInput } from "@/lib/validations/class";
+import { ClassData } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ export default function NewClassButton() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [createdClass, setCreatedClass] = useState<any>(null);
+  const [createdClass, setCreatedClass] = useState<ClassData | null>(null);
   const [formData, setFormData] = useState<CreateClassInput>({
     name: "",
     description: "",

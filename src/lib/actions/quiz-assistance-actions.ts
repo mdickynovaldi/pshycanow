@@ -12,10 +12,7 @@ import {
   quizAssistanceLevel2Schema,
   quizAssistanceLevel3Schema
 } from "@/lib/validations/quiz-assistance";
-import { writeFile } from "fs/promises";
-import * as fs from 'fs';
-import { v4 as uuidv4 } from "uuid";
-import path from "path";
+// Import tidak lagi diperlukan untuk file system operations
 
 // Helper untuk memeriksa apakah pengguna adalah guru
 async function checkTeacherAccess() {
@@ -344,54 +341,7 @@ export async function getQuizAssistanceLevel3(quizId: string) {
   }
 }
 
-// Upload PDF file
-export async function uploadPdfFile(file: File) {
-  try {
-    // Validasi tipe file
-    if (file.type !== 'application/pdf') {
-      return { success: false, message: "Hanya file PDF yang diperbolehkan" };
-    }
-    
-    // Batasi ukuran file (misalnya 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB dalam bytes
-    if (file.size > maxSize) {
-      return { success: false, message: "Ukuran file tidak boleh lebih dari 10MB" };
-    }
-    
-    // Buat nama file unik
-    const fileName = `${uuidv4()}.pdf`;
-    
-    // Path untuk menyimpan file
-    const publicDir = path.join(process.cwd(), "public");
-    const uploadsDir = path.join(publicDir, "pdfs");
-    const filePath = path.join(uploadsDir, fileName);
-    
-    // Konversi file ke ArrayBuffer
-    const buffer = await file.arrayBuffer();
-    
-    // Buat direktori jika belum ada
-    try {
-      await writeFile(filePath, Buffer.from(buffer));
-    } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        await writeFile(filePath, Buffer.from(buffer));
-      } else {
-        throw error;
-      }
-    }
-    
-    // URL relatif untuk file
-    const pdfUrl = `/pdfs/${fileName}`;
-    
-    return { success: true, pdfUrl };
-  } catch (error) {
-    console.error("Error uploading PDF file:", error);
-    return { success: false, message: "Gagal mengunggah file PDF" };
-  }
-}
+// Function uploadPdfFile dihapus karena sekarang menggunakan database storage
 
 // Membuat atau memperbarui quiz assistance level 3
 export async function upsertQuizAssistanceLevel3(data: QuizAssistanceLevel3Input) {
@@ -423,18 +373,17 @@ export async function upsertQuizAssistanceLevel3(data: QuizAssistanceLevel3Input
     // Buat atau update quiz assistance level 3
     const quizAssistance = await prisma.quizAssistanceLevel3.upsert({
       where: { 
-        id: data.id || "",
         quizId: data.quizId
       },
       update: {
         title: data.title,
         description: data.description,
-        pdfUrl: data.pdfUrl
+        ...(data.pdfUrl && { pdfUrl: data.pdfUrl })
       },
       create: {
         title: data.title,
         description: data.description,
-        pdfUrl: data.pdfUrl,
+        pdfUrl: data.pdfUrl || "",
         quizId: data.quizId
       }
     });

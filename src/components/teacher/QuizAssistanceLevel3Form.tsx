@@ -30,6 +30,7 @@ export default function QuizAssistanceLevel3Form({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [hasPdfData, setHasPdfData] = useState<boolean>(!!initialData?.pdfUrl);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -81,6 +82,7 @@ export default function QuizAssistanceLevel3Form({
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("quizId", quizId);
       
       const response = await fetch("/api/upload-pdf", {
         method: "POST",
@@ -95,7 +97,9 @@ export default function QuizAssistanceLevel3Form({
       const data = await response.json();
       
       if (data.success) {
-        setFormData(prev => ({ ...prev, pdfUrl: data.pdfUrl }));
+        // Set pdfUrl to database URL endpoint
+        setFormData(prev => ({ ...prev, pdfUrl: `/api/pdf/${quizId}` }));
+        setHasPdfData(true);
       } else {
         setErrors(prev => ({ ...prev, file: data.message || "Gagal mengunggah file" }));
       }
@@ -105,7 +109,7 @@ export default function QuizAssistanceLevel3Form({
     } finally {
       setIsUploading(false);
     }
-  }, [selectedFile]);
+  }, [selectedFile, quizId]);
   
   useEffect(() => {
     if (selectedFile) {
@@ -121,8 +125,8 @@ export default function QuizAssistanceLevel3Form({
       newErrors.title = "Judul bantuan wajib diisi";
     }
     
-    // Validasi PDF URL
-    if (!formData.pdfUrl) {
+    // Validasi PDF - cek apakah ada PDF data di database atau baru diupload
+    if (!hasPdfData && !selectedFile) {
       newErrors.pdfUrl = "PDF wajib diupload";
     }
     
@@ -145,7 +149,7 @@ export default function QuizAssistanceLevel3Form({
         id: formData.id,
         title: formData.title || "Bantuan Level 3",
         description: formData.description,
-        pdfUrl: formData.pdfUrl || "",
+        pdfUrl: formData.pdfUrl || `/api/pdf/${quizId}`,
         quizId: quizId
       };
       
@@ -186,6 +190,15 @@ export default function QuizAssistanceLevel3Form({
       alert("Terjadi kesalahan saat menghapus bantuan level 3");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRemovePdf = () => {
+    setFormData(prev => ({ ...prev, pdfUrl: "" }));
+    setSelectedFile(null);
+    setHasPdfData(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
   
@@ -241,7 +254,7 @@ export default function QuizAssistanceLevel3Form({
           </h3>
           
           <div className="mt-2">
-            {formData.pdfUrl ? (
+            {hasPdfData ? (
               <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -251,7 +264,7 @@ export default function QuizAssistanceLevel3Form({
                         Dokumen PDF
                       </h4>
                       <a
-                        href={formData.pdfUrl}
+                        href={`/api/pdf/${quizId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -263,13 +276,7 @@ export default function QuizAssistanceLevel3Form({
                   
                   <button
                     type="button"
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, pdfUrl: "" }));
-                      setSelectedFile(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = "";
-                      }
-                    }}
+                    onClick={handleRemovePdf}
                     className="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                   >
                     <XMarkIcon className="h-5 w-5" />

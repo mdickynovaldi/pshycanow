@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { 
   UserPlusIcon, 
-  XMarkIcon, 
   MagnifyingGlassIcon, 
   CheckIcon,
   UsersIcon,
@@ -195,7 +195,7 @@ export default function EnrollStudentsButton({
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0">
                         {student.image ? (
-                          <img
+                          <Image
                             src={student.image}
                             alt={student.name || ""}
                             className="w-10 h-10 rounded-full"
@@ -295,7 +295,7 @@ export default function EnrollStudentsButton({
                   <div key={student.id} className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
                       {student.image ? (
-                        <img
+                        <Image
                           src={student.image}
                           alt={student.name || ""}
                           className="w-8 h-8 rounded-full"

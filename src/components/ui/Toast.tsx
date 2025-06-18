@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 import { XMarkIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 export type ToastType = "success" | "error" | "warning" | "info";
@@ -20,20 +20,20 @@ interface ToastProps {
 function Toast({ toast, onClose }: ToastProps) {
   const [isLeaving, setIsLeaving] = useState(false);
 
+  const handleClose = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => {
+      onClose(toast.id);
+    }, 300); // Animation duration
+  }, [onClose, toast.id]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       handleClose();
     }, toast.duration);
 
     return () => clearTimeout(timer);
-  }, [toast.duration]);
-
-  const handleClose = () => {
-    setIsLeaving(true);
-    setTimeout(() => {
-      onClose(toast.id);
-    }, 300); // Animation duration
-  };
+  }, [toast.duration, handleClose]);
 
   const getToastStyles = () => {
     switch (toast.type) {

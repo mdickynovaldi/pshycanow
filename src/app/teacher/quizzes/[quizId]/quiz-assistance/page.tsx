@@ -42,7 +42,11 @@ export default function QuizAssistancePage() {
         setLevel2Data(l2.data);
       }
       if (l3.success && l3.data) {
-        setLevel3Data(l3.data);
+        // Pastikan pdfUrl bertipe string, bukan null
+        setLevel3Data({
+          ...l3.data,
+          pdfUrl: l3.data.pdfUrl ?? "",
+        });
       }
     } catch (error) {
       console.error("Error loading quiz assistance data:", error);

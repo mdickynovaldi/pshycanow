@@ -44,7 +44,7 @@ export const quizAssistanceLevel3Schema = z.object({
   title: z.string().min(1, "Judul tidak boleh kosong"),
   description: z.string().nullable().optional(),
   quizId: z.string(),
-  pdfUrl: z.string().min(1, "URL PDF tidak boleh kosong"),
+  pdfUrl: z.string().optional(),
 });
 
 export type QuizAssistanceLevel3Input = z.infer<typeof quizAssistanceLevel3Schema>;
@@ -88,7 +88,7 @@ export const assistanceLevel3Schema = z.object({
   quizId: z.string(),
   title: z.string().min(1, "Judul tidak boleh kosong"),
   description: z.string().optional().nullable(),
-  pdfUrl: z.string().min(1, "URL PDF tidak boleh kosong")
+  pdfUrl: z.string().optional()
 });
 
 // Skema untuk jawaban bantuan level 1
