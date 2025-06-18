@@ -198,9 +198,8 @@ export default async function QuizDetailPage({ params }: PageProps) {
                           <Image
                             src={question.imageUrl}
                             alt={`Gambar untuk pertanyaan ${index + 1}`}
-                            layout="fill"
-                            objectFit="contain"
-                            className="w-full h-full"
+                            fill
+                            className="object-contain w-full h-full"
                           />
                         </div>
                       </div>

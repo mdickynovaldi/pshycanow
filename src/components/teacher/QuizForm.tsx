@@ -398,8 +398,8 @@ export default function QuizForm({ quiz, classes = [] }: QuizFormProps) {
                             <Image
                               src={question.imageUrl}
                               alt={`Gambar untuk pertanyaan ${index + 1}`}
-                              layout="fill"
-                              objectFit="contain"
+                              fill
+                              className="object-contain"
                             />
                             <button
                               type="button"
