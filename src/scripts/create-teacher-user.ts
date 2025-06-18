@@ -3,9 +3,9 @@ import { prisma } from "../lib/prisma"; // Path relatif dari src/scripts/ ke src
 import { Prisma } from "@prisma/client";
 
 async function createTeacher() {
-  const name = "Guru";
-  const email = "guru@example.com";
-  const password = "12345678";
+  const name = "Guru Admin";
+  const email = "guru@admin.com";
+  const password = "123456";
 
   console.log(`Mulai membuat akun guru dengan email: ${email}...`);
 
@@ -14,8 +14,8 @@ async function createTeacher() {
     console.error("Format email tidak valid.");
     return;
   }
-  if (password.length < 8) {
-    console.error("Password minimal harus 8 karakter.");
+  if (password.length < 6) {
+    console.error("Password minimal harus 6 karakter.");
     return;
   }
 

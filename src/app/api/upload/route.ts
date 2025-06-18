@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
+import { put } from "@vercel/blob";
 import { v4 as uuidv4 } from "uuid";
-import path from "path";
 import { getServerSession } from "next-auth";
 import { authOptions, UserRole } from "@/lib/auth";
-import * as fs from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,36 +54,16 @@ export async function POST(request: NextRequest) {
     
     // Buat nama file unik
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
+    const fileName = `quiz-images/${uuidv4()}.${fileExtension}`;
     
-    // Path untuk menyimpan file
-    const publicDir = path.join(process.cwd(), "public");
-    const uploadsDir = path.join(publicDir, "uploads");
-    const filePath = path.join(uploadsDir, fileName);
-    
-    // Konversi file ke ArrayBuffer
-    const buffer = await file.arrayBuffer();
-    
-    // Buat direktori jika belum ada
-    try {
-      await writeFile(filePath, Buffer.from(buffer));
-    } catch (error: unknown) {
-      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'ENOENT') {
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        await writeFile(filePath, Buffer.from(buffer));
-      } else {
-        throw error;
-      }
-    }
-    
-    // URL relatif untuk file
-    const fileUrl = `/uploads/${fileName}`;
+    // Upload ke Vercel Blob Storage
+    const blob = await put(fileName, file, {
+      access: 'public',
+    });
     
     return NextResponse.json({
       success: true,
-      url: fileUrl
+      url: blob.url
     });
   } catch (error) {
     console.error("Error uploading file:", error);
