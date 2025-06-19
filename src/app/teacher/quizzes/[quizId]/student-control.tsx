@@ -9,9 +9,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 
 import { Input } from "@/components/ui/input";
 import {
@@ -92,10 +90,6 @@ export default function StudentControl({ quizId }: { quizId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [overrideSystem, setOverrideSystem] = useState(false);
-  const [assistanceLevel, setAssistanceLevel] = useState<string>("NONE");
-  const [saving, setSaving] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedL2Answers, setSelectedL2Answers] = useState<Level2AnswersData | null>(null);
   const [loadingL2Answers, setLoadingL2Answers] = useState(false);
@@ -142,25 +136,15 @@ export default function StudentControl({ quizId }: { quizId: string }) {
   const handleSelectStudent = async (student: Student) => {
     setSelectedStudent(student);
     
-    if (student.progress) {
-      setOverrideSystem(student.progress.overrideSystemFlow || false);
-      setAssistanceLevel(student.progress.manuallyAssignedLevel || "NONE");
-    } else {
-      setOverrideSystem(false);
-      setAssistanceLevel("NONE");
-      
+    if (!student.progress) {
       // Coba dapatkan progress terbaru
       try {
-        setSearching(true);
         const response = await fetch(`/api/student/quiz-progress?quizId=${quizId}&studentId=${student.id}`);
         
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
             const progressData = data.data as StudentProgress;
-            // Update progress siswa yang dipilih
-            setOverrideSystem(progressData.overrideSystemFlow || false);
-            setAssistanceLevel(progressData.manuallyAssignedLevel || "NONE");
             
             // Update data siswa di state
             setStudents(prevStudents => 
@@ -183,118 +167,13 @@ export default function StudentControl({ quizId }: { quizId: string }) {
         }
       } catch (err) {
         console.error("Error fetching student progress:", err);
-      } finally {
-        setSearching(false);
       }
     }
   };
   
-  // Simpan pengaturan override
-  const handleSaveOverride = async () => {
-    if (!selectedStudent) return;
-    
-    setSaving(true);
-    
-    try {
-      const response = await fetch('/api/teacher/override-assistance-level', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentId: selectedStudent.id,
-          quizId,
-          overrideSystemFlow: overrideSystem,
-          manuallyAssignedLevel: overrideSystem ? assistanceLevel : null
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        toast.success("Pengaturan alur pembelajaran berhasil disimpan");
-        
-        // Update data di state
-        setStudents(prevStudents => 
-          prevStudents.map(student => 
-            student.id === selectedStudent.id 
-              ? { 
-                  ...student, 
-                  progress: {
-                    ...student.progress,
-                    overrideSystemFlow: overrideSystem,
-                    manuallyAssignedLevel: overrideSystem ? assistanceLevel : null,
-                    level3AccessGranted: overrideSystem && assistanceLevel === "ASSISTANCE_LEVEL3"
-                  } as StudentProgress
-                }
-              : student
-          )
-        );
-      } else {
-        toast.error(data.message || "Gagal menyimpan pengaturan");
-      }
-    } catch (error) {
-      console.error("Error saving override:", error);
-      toast.error("Terjadi kesalahan saat menyimpan pengaturan");
-    } finally {
-      setSaving(false);
-    }
-  };
+
   
-  // Berikan akses langsung ke bantuan level 3
-  const handleGrantLevel3Access = async (studentId: string, granted: boolean = true) => {
-    try {
-      const response = await fetch('/api/student/grant-level3-access', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentId,
-          quizId,
-          granted
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        toast.success(granted ? "Akses ke bantuan level 3 telah diberikan" : "Akses ke bantuan level 3 telah dicabut");
-        
-        // Update data di state
-        setStudents(prevStudents => 
-          prevStudents.map(student => 
-            student.id === studentId 
-              ? { 
-                  ...student, 
-                  progress: {
-                    ...student.progress,
-                    level3AccessGranted: granted,
-                    assistanceRequired: granted ? "ASSISTANCE_LEVEL3" : student.progress?.assistanceRequired || "NONE"
-                  } as StudentProgress
-                }
-              : student
-          )
-        );
-        
-        if (selectedStudent?.id === studentId) {
-          setSelectedStudent(prev => prev ? {
-            ...prev,
-            progress: {
-              ...prev.progress,
-              level3AccessGranted: granted,
-              assistanceRequired: granted ? "ASSISTANCE_LEVEL3" : prev.progress?.assistanceRequired || "NONE"
-            } as StudentProgress
-          } : null);
-        }
-      } else {
-        toast.error(data.message || "Gagal mengatur akses");
-      }
-    } catch (error) {
-      console.error("Error granting level 3 access:", error);
-      toast.error("Terjadi kesalahan saat mengatur akses bantuan level 3");
-    }
-  };
+
   
   // Toggle status lulus/tidak lulus kuis utama
   const handleToggleQuizStatus = async (studentId: string, isPassed: boolean | null) => {
@@ -712,8 +591,8 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                         <span className="text-muted-foreground"> / 4</span>
                       </div>
                       
-                      <div className="text-muted-foreground">Percobaan Gagal:</div>
-                      <div className="font-medium text-red-600">{selectedStudent.progress?.failedAttempts || 0}</div>
+                      {/* <div className="text-muted-foreground">Percobaan Gagal:</div>
+                      <div className="font-medium text-red-600">{selectedStudent.progress?.failedAttempts || 0}</div> */}
                       
                       <div className="text-muted-foreground">Status Kuis:</div>
                       <div className="flex items-center gap-2">
@@ -736,7 +615,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                         </span>
                       </div>
                       
-                      <div className="col-span-2 mt-2">
+                      {/* <div className="col-span-2 mt-2">
                         <div className="flex gap-1.5">
                           <Button 
                             size="sm"
@@ -766,7 +645,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                             Tidak
                           </Button>
                         </div>
-                      </div>
+                      </div> */}
                       
                       <div className="text-muted-foreground">Bantuan Level 1:</div>
                       <div className={`font-medium ${selectedStudent.progress?.level1Completed ? "text-green-600" : "text-red-600"}`}>
@@ -785,7 +664,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                     </div>
                   </div>
                   
-                  <div className="space-y-4">
+                  {/* <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="override-system" className="font-medium">
                         Override Alur Otomatis
@@ -819,9 +698,9 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                         </div>
                       </RadioGroup>
                     </div>
-                  </div>
+                  </div> */}
                   
-                  <Button 
+                  {/* <Button 
                     onClick={handleSaveOverride}
                     disabled={saving}
                     className="w-full"
@@ -870,7 +749,7 @@ export default function StudentControl({ quizId }: { quizId: string }) {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                   
                   {/* Tombol Penilaian */}
                   <div className="border-t pt-6 space-y-4">

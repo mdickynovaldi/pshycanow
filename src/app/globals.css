@@ -120,3 +120,78 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* KaTeX Math Rendering Styles */
+.math-renderer {
+  /* Ensure math equations are displayed properly */
+  font-family: inherit;
+}
+
+.math-renderer .katex {
+  /* Reset any potential conflicting styles */
+  font-size: 1em !important;
+  line-height: inherit !important;
+}
+
+.math-renderer .katex-display {
+  /* Block math styling */
+  margin: 0.5em 0 !important;
+  text-align: center;
+}
+
+.math-renderer .katex-html {
+  /* Ensure proper display */
+  display: inline-block;
+}
+
+/* Inline math renderer specific styling */
+.math-renderer.inline {
+  display: inline !important;
+}
+
+.math-renderer.inline .katex {
+  display: inline !important;
+}
+
+.math-renderer.inline .katex-display {
+  display: inline !important;
+  margin: 0 !important;
+  text-align: inherit !important;
+}
+
+/* Fix for prose/typography classes that might interfere */
+.prose .math-renderer .katex,
+.prose .katex {
+  font-size: 1em !important;
+  margin: 0 !important;
+}
+
+.prose .math-renderer .katex-display,
+.prose .katex-display {
+  margin: 0.5em 0 !important;
+  text-align: center;
+}
+
+/* Container for math content */
+.math-renderer-container {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* Ensure equations in answers are properly styled */
+.math-renderer-container .katex {
+  font-size: inherit !important;
+  color: inherit !important;
+}
+
+/* Debug styling for development */
+.math-renderer[data-debug="true"] {
+  border: 1px dashed #ccc;
+  padding: 2px;
+}
+
+.math-renderer[data-debug="true"]:before {
+  content: "Math: ";
+  font-size: 0.8em;
+  color: #666;
+}

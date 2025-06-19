@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import { MathEditor } from "@/components/ui/MathEditor";
+import { MathRenderer } from "@/components/ui/MathRenderer";
 import { getLatestLevel2Submission, submitAssistanceLevel2 } from "@/lib/actions/assistance-level2-actions";
 import { getAssistanceLevel2 } from "@/lib/actions/assistance-actions";
 import { getStudentQuizStatus } from "@/lib/actions/quiz-progress-actions";
@@ -424,9 +425,18 @@ export default function AssistanceLevel2Page() {
             </div>
 
             {submission?.feedback && (
-              <div className="mt-4">
-                <h3 className="font-medium mb-2">Umpan Balik:</h3>
-                <p className="text-sm">{submission.feedback}</p>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="font-medium mb-2 text-blue-800 flex items-center gap-2">
+                  💬 Umpan Balik dari Guru:
+                </h3>
+                <div className="p-3 bg-white rounded border border-blue-200">
+                  <div className="math-renderer-container">
+                    <MathRenderer 
+                      content={submission.feedback} 
+                      className="text-sm text-blue-900 leading-relaxed"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -555,24 +565,49 @@ export default function AssistanceLevel2Page() {
             </div>
             
             {/* Tampilkan jawaban sebelumnya */}
-            {answeredQuestions.length > 0 && answeredQuestions.includes(currentQuestionIndex - 1) && (
+            {answeredQuestions.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-sm font-medium mb-2">Jawaban Sebelumnya:</h3>
-                <div className="space-y-3">
-                  {answeredQuestions.map((idx) => {
-                    if (idx < currentQuestionIndex) {
+                <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  Jawaban Sebelumnya:
+                </h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {answeredQuestions
+                    .filter(idx => idx < currentQuestionIndex)
+                    .map((idx) => {
                       const q = assistance.questions[idx];
+                      const answerContent = answers[q.id];
+                      
+                      // Debug: log content untuk memastikan ada data
+                      console.log(`Answer content for question ${idx + 1}:`, answerContent);
+                      
                       return (
-                        <div key={q.id} className="p-3 rounded-lg border bg-muted/30">
-                          <p className="text-sm font-medium mb-1">{idx + 1}. {q.question}</p>
-                          <div className="p-2 bg-background rounded border">
-                            <p className="whitespace-pre-wrap text-sm">{answers[q.id]}</p>
+                        <div key={q.id} className="p-4 rounded-lg border-2 border-green-100 bg-green-50/50">
+                          <div className="flex items-start gap-2 mb-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-green-800 mb-2">
+                                <span>{idx + 1}. </span>
+                                <MathRenderer content={q.question} className="inline" />
+                              </div>
+                              <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+                                <div className="text-sm font-medium text-gray-700 mb-2">Jawaban:</div>
+                                {answerContent ? (
+                                  <div className="math-renderer-container">
+                                    <MathRenderer 
+                                      content={answerContent} 
+                                      className="text-gray-900 leading-relaxed break-words"
+                                      debug={process.env.NODE_ENV === 'development'}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="text-gray-500 italic">Tidak ada jawaban</div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
-                    }
-                    return null;
-                  })}
+                    })}
                 </div>
                 <Separator className="my-4" />
               </div>
@@ -580,14 +615,22 @@ export default function AssistanceLevel2Page() {
             
             {/* Pertanyaan saat ini */}
             <div className="p-4 rounded-lg border">
-              <div className="flex justify-between">
-                <p className="font-medium mb-3">{currentQuestionIndex + 1}. {currentQuestion.question}</p>
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 pr-4">
+                  <div className="text-sm font-medium text-gray-500 mb-1">Pertanyaan {currentQuestionIndex + 1}:</div>
+                  <div className="math-renderer-container">
+                    <MathRenderer 
+                      content={`${currentQuestionIndex + 1}. ${currentQuestion.question}`}
+                      className="font-medium text-gray-900 leading-relaxed"
+                    />
+                  </div>
+                </div>
                 {currentQuestion.hint && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleHint(currentQuestion.id)}
-                    className="h-8 px-2 text-muted-foreground"
+                    className="h-8 px-2 text-muted-foreground flex-shrink-0"
                   >
                     <HelpCircle className="h-4 w-4 mr-1" />
                     Petunjuk
@@ -597,16 +640,20 @@ export default function AssistanceLevel2Page() {
               
               {showHints[currentQuestion.id] && currentQuestion.hint && (
                 <div className="p-3 bg-blue-50 rounded border border-blue-200 text-sm mb-3">
-                  <p className="font-medium mb-1">Petunjuk:</p>
-                  <p>{currentQuestion.hint}</p>
+                  <p className="font-medium mb-2 text-blue-800">💡 Petunjuk:</p>
+                  <div className="math-renderer-container">
+                    <MathRenderer 
+                      content={currentQuestion.hint} 
+                      className="text-blue-900 leading-relaxed"
+                    />
+                  </div>
                 </div>
               )}
               
-              <Textarea
-                placeholder="Tulis jawaban Anda di sini..."
-                className="min-h-[120px]"
+              <MathEditor
+                placeholder="Tulis jawaban Anda di sini... (Gunakan $...$ untuk equation inline atau $$...$$ untuk equation block)"
                 value={answers[currentQuestion.id] || ''}
-                onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                onChange={(value) => handleAnswerChange(currentQuestion.id, value)}
               />
             </div>
             
