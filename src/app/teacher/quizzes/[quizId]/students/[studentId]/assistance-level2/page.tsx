@@ -11,7 +11,6 @@ import { MathRenderer } from "@/components/ui/MathRenderer";
 import { toast } from "sonner";
 import { RefreshCcw } from "lucide-react";
 
-
 interface AnswerItem {
   id: string | null;
   questionId: string;
@@ -40,14 +39,16 @@ export default function AssistanceLevel2Page() {
 
   const fetchSubmission = useCallback(async () => {
     try {
-      const response = await fetch(`/api/teacher/assistance-level2-submission?quizId=${params.quizId}&studentId=${params.studentId}`);
-      
+      const response = await fetch(
+        `/api/teacher/assistance-level2-submission?quizId=${params.quizId}&studentId=${params.studentId}`
+      );
+
       if (!response.ok) {
         throw new Error("Gagal memuat data submission");
       }
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setSubmission(data.data.submission);
         setStudentName(data.data.studentName);
@@ -65,10 +66,6 @@ export default function AssistanceLevel2Page() {
   useEffect(() => {
     fetchSubmission();
   }, [fetchSubmission]);
-
-
-
-  
 
   if (loading) {
     return (
@@ -99,49 +96,66 @@ export default function AssistanceLevel2Page() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">Penilaian Bantuan Level 2</h1>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              submission.status === 'PASSED' 
-                ? 'bg-green-100 text-green-800' 
-                : submission.status === 'FAILED'
-                ? 'bg-red-100 text-red-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {submission.status === 'PASSED' ? '✓ Lulus' : 
-               submission.status === 'FAILED' ? '✗ Tidak Lulus' : 
-               '⏳ Menunggu Penilaian'}
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                submission.status === "PASSED"
+                  ? "bg-green-100 text-green-800"
+                  : submission.status === "FAILED"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }`}>
+              {submission.status === "PASSED"
+                ? "✓ Lulus"
+                : submission.status === "FAILED"
+                ? "✗ Tidak Lulus"
+                : "⏳ Menunggu Penilaian"}
             </span>
           </div>
           <p className="text-muted-foreground mt-1">
-            Siswa: {studentName} • Tanggal Submit: {new Date(submission.createdAt).toLocaleDateString('id-ID')}
+            Siswa: {studentName} • Tanggal Submit:{" "}
+            {new Date(submission.createdAt).toLocaleDateString("id-ID")}
           </p>
         </div>
-        
       </div>
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Jawaban Siswa</h2>
           <div className="text-sm text-muted-foreground">
-            {submission.answers.filter(a => a.answerText && (a.answerText.includes('$') || a.answerText.includes('\\'))).length > 0 && (
+            {submission.answers.filter(
+              (a) =>
+                a.answerText &&
+                (a.answerText.includes("$") || a.answerText.includes("\\"))
+            ).length > 0 && (
               <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs">
-                📐 {submission.answers.filter(a => a.answerText && (a.answerText.includes('$') || a.answerText.includes('\\'))).length} jawaban mengandung equation
+                📐{" "}
+                {
+                  submission.answers.filter(
+                    (a) =>
+                      a.answerText &&
+                      (a.answerText.includes("$") ||
+                        a.answerText.includes("\\"))
+                  ).length
+                }{" "}
+                jawaban mengandung equation
               </span>
             )}
           </div>
         </div>
-        
+
         {submission.answers.map((answer, index) => (
           <Card key={answer.questionId} className="mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between">
                 <span>Pertanyaan {index + 1}</span>
                 {answer.isCorrect !== null && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    answer.isCorrect 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {answer.isCorrect ? '✓ Benar' : '✗ Salah'}
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      answer.isCorrect
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                    {answer.isCorrect ? "✓ Benar" : "✗ Salah"}
                   </span>
                 )}
               </CardTitle>
@@ -150,15 +164,17 @@ export default function AssistanceLevel2Page() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   Pertanyaan:
-                  {answer.question.question && (answer.question.question.includes('$') || answer.question.question.includes('\\')) && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                      📐 Mengandung Math
-                    </span>
-                  )}
+                  {answer.question.question &&
+                    (answer.question.question.includes("$") ||
+                      answer.question.question.includes("\\")) && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        📐 Mengandung Math
+                      </span>
+                    )}
                 </Label>
                 <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200 shadow-sm">
                   <div className="prose prose-sm max-w-none">
-                    <MathRenderer 
+                    <MathRenderer
                       content={answer.question.question}
                       className="text-blue-900 leading-relaxed"
                     />
@@ -169,16 +185,18 @@ export default function AssistanceLevel2Page() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   Jawaban Siswa:
-                  {answer.answerText && (answer.answerText.includes('$') || answer.answerText.includes('\\')) && (
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                      📐 Mengandung Math
-                    </span>
-                  )}
+                  {answer.answerText &&
+                    (answer.answerText.includes("$") ||
+                      answer.answerText.includes("\\")) && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                        📐 Mengandung Math
+                      </span>
+                    )}
                 </Label>
                 <div className="p-4 bg-white rounded-lg border-2 border-gray-200 min-h-[80px] shadow-sm">
                   {answer.answerText ? (
                     <div className="prose prose-sm max-w-none">
-                      <MathRenderer 
+                      <MathRenderer
                         content={answer.answerText}
                         className="text-gray-900 leading-relaxed"
                       />
@@ -245,4 +263,4 @@ export default function AssistanceLevel2Page() {
       </div>
     </div>
   );
-} 
+}
